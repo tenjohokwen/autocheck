@@ -1,0 +1,883 @@
+openapi: 3.0.0
+info:
+  title: AutoCheck Maintenance Management API
+  description: |
+    Maintenance task management endpoints for the AutoCheck Vehicle Maintenance Management System.
+
+    All endpoints use POST requests with action-based routing following the GAS backend pattern.
+    Request format: `{ action: "handler.method", data: {...} }`
+
+    **Maintenance Management Features**:
+    - Create maintenance tasks with type, priority, due date
+    - Track task status: scheduled → in-progress → completed
+    - Assign tasks to technicians
+    - Reschedule maintenance tasks
+    - Create recurring maintenance (time-based or mileage-based)
+    - Auto-generate future tasks from recurring schedules
+    - Record completion details (notes, cost, duration)
+
+    **Task Types**:
+    - Preventive: Scheduled maintenance (oil changes, tire rotation)
+    - Corrective: Repair work (fix broken parts)
+    - Predictive: Based on diagnostics (sensor alerts)
+    - Inspection & Compliance: Safety/regulatory inspections
+
+    **Role-Based Access**:
+    - Fleet Manager: Full CRUD access, can assign tasks, view all tasks
+    - Technician: Can update status and completion details for assigned tasks only
+
+    **Business Rules**:
+    - Status transitions: scheduled → in-progress → completed
+    - Rescheduling preserves original scheduled date for audit
+    - Recurring tasks auto-generate based on time or mileage intervals
+    - Archiving a vehicle cancels all future recurring tasks
+    - Reminders shown when due date <= TODAY + 7 days
+  version: 1.0.0
+  contact:
+    name: AutoCheck API Support
+
+servers:
+  - url: https://script.google.com/macros/s/{deploymentId}/exec
+    description: Google Apps Script deployment endpoint
+
+paths:
+  /:
+    post:
+      summary: Maintenance management endpoint router
+      description: |
+        All maintenance operations are routed through POST to this endpoint.
+        The `action` field determines which handler method is invoked.
+      operationId: maintenanceRouter
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CreateTaskRequest'
+                - $ref: '#/components/schemas/GetTaskRequest'
+                - $ref: '#/components/schemas/ListTasksRequest'
+                - $ref: '#/components/schemas/UpdateTaskRequest'
+                - $ref: '#/components/schemas/UpdateStatusRequest'
+                - $ref: '#/components/schemas/RescheduleTaskRequest'
+                - $ref: '#/components/schemas/CompleteTaskRequest'
+                - $ref: '#/components/schemas/CreateRecurringTaskRequest'
+            examples:
+              createTask:
+                summary: Create a new maintenance task
+                value:
+                  action: maintenance.create
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    type: Preventive
+                    description: Oil change and filter replacement
+                    priority: Medium
+                    dueDate: "2025-02-15"
+                    assignedTechnicianId: usr-660e8400-e29b-41d4-a716-446655440001
+              updateStatus:
+                summary: Update task status (technician starting work)
+                value:
+                  action: maintenance.updateStatus
+                  data:
+                    taskId: mnt-550e8400-e29b-41d4-a716-446655440000
+                    status: in-progress
+              completeTask:
+                summary: Complete a maintenance task
+                value:
+                  action: maintenance.complete
+                  data:
+                    taskId: mnt-550e8400-e29b-41d4-a716-446655440000
+                    notes: "Replaced oil filter and added 4.5L synthetic oil. Inspected air filter - still in good condition."
+                    cost: 89.99
+                    durationMinutes: 45
+              createRecurring:
+                summary: Create recurring maintenance task
+                value:
+                  action: maintenance.createRecurring
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    type: Preventive
+                    description: Oil change
+                    priority: Medium
+                    recurrenceIntervalDays: 90
+                    recurrenceIntervalKm: 5000
+              listTasks:
+                summary: List maintenance tasks with filters
+                value:
+                  action: maintenance.list
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    status: scheduled
+                    dueDateFrom: "2025-01-01"
+                    dueDateTo: "2025-12-31"
+      responses:
+        '200':
+          description: Successful maintenance operation
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TaskResponse'
+                  - $ref: '#/components/schemas/ListTasksResponse'
+              examples:
+                createSuccess:
+                  summary: Task created successfully
+                  value:
+                    status: 200
+                    msgKey: maintenance.create.success
+                    message: Maintenance task created successfully
+                    data:
+                      task:
+                        id: mnt-550e8400-e29b-41d4-a716-446655440000
+                        organizationId: org-550e8400-e29b-41d4-a716-446655440000
+                        vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                        type: Preventive
+                        description: Oil change and filter replacement
+                        priority: Medium
+                        status: scheduled
+                        dueDate: "2025-02-15"
+                        scheduledDate: "2025-02-15"
+                        startDate: null
+                        completionDate: null
+                        assignedTechnicianId: usr-660e8400-e29b-41d4-a716-446655440001
+                        durationMinutes: null
+                        notes: null
+                        cost: null
+                        isRecurring: false
+                        recurrenceIntervalDays: null
+                        recurrenceIntervalKm: null
+                        parentTaskId: null
+                        nextOccurrenceDate: null
+                        lastGeneratedDate: null
+                        cancelledAt: null
+                        createdBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        createdAt: "2025-01-15T10:30:00Z"
+                        changedBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        updatedAt: "2025-01-15T10:30:00Z"
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                completeSuccess:
+                  summary: Task completed successfully
+                  value:
+                    status: 200
+                    msgKey: maintenance.complete.success
+                    message: Maintenance task completed successfully
+                    data:
+                      task:
+                        id: mnt-550e8400-e29b-41d4-a716-446655440000
+                        status: completed
+                        startDate: "2025-02-15T09:00:00Z"
+                        completionDate: "2025-02-15T09:45:00Z"
+                        notes: "Replaced oil filter and added 4.5L synthetic oil. Inspected air filter - still in good condition."
+                        cost: 89.99
+                        durationMinutes: 45
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: tech.user@example.com
+                    user:
+                      id: usr-660e8400-e29b-41d4-a716-446655440001
+                      username: technician1
+                      email: tech.user@example.com
+                      role: Technician
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    CreateTaskRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [maintenance.create]
+        data:
+          type: object
+          required:
+            - vehicleId
+            - type
+            - description
+            - dueDate
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Vehicle requiring maintenance
+            type:
+              type: string
+              enum: [Preventive, Corrective, Predictive, Inspection & Compliance]
+              description: Maintenance type
+            description:
+              type: string
+              minLength: 1
+              maxLength: 500
+              description: Maintenance description
+              example: Oil change and filter replacement
+            priority:
+              type: string
+              enum: [Low, Medium, High]
+              default: Medium
+              description: Task priority
+            dueDate:
+              type: string
+              format: date
+              description: When maintenance is due
+            assignedTechnicianId:
+              type: string
+              format: uuid
+              description: Technician assigned to this task
+              nullable: true
+
+    GetTaskRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [maintenance.get]
+        data:
+          type: object
+          required:
+            - taskId
+          properties:
+            taskId:
+              type: string
+              format: uuid
+              description: Task ID to retrieve
+
+    ListTasksRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [maintenance.list]
+        data:
+          type: object
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Filter by vehicle
+              nullable: true
+            status:
+              type: string
+              enum: [scheduled, in-progress, completed]
+              description: Filter by status
+              nullable: true
+            type:
+              type: string
+              enum: [Preventive, Corrective, Predictive, Inspection & Compliance]
+              description: Filter by type
+              nullable: true
+            assignedTechnicianId:
+              type: string
+              format: uuid
+              description: Filter by assigned technician
+              nullable: true
+            dueDateFrom:
+              type: string
+              format: date
+              description: Filter tasks due on or after this date
+              nullable: true
+            dueDateTo:
+              type: string
+              format: date
+              description: Filter tasks due on or before this date
+              nullable: true
+            includeRecurring:
+              type: boolean
+              default: false
+              description: Include recurring task templates in results
+            sortBy:
+              type: string
+              enum: [dueDate, priority, createdAt, status]
+              default: dueDate
+            sortOrder:
+              type: string
+              enum: [asc, desc]
+              default: asc
+
+    UpdateTaskRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [maintenance.update]
+        data:
+          type: object
+          required:
+            - taskId
+          properties:
+            taskId:
+              type: string
+              format: uuid
+            description:
+              type: string
+              maxLength: 500
+              nullable: true
+            priority:
+              type: string
+              enum: [Low, Medium, High]
+              nullable: true
+            assignedTechnicianId:
+              type: string
+              format: uuid
+              nullable: true
+            notes:
+              type: string
+              description: Technician notes
+              nullable: true
+
+    UpdateStatusRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [maintenance.updateStatus]
+        data:
+          type: object
+          required:
+            - taskId
+            - status
+          properties:
+            taskId:
+              type: string
+              format: uuid
+            status:
+              type: string
+              enum: [scheduled, in-progress, completed]
+              description: |
+                Valid transitions:
+                - scheduled → in-progress (sets startDate)
+                - in-progress → completed (use maintenance.complete instead)
+                - scheduled → scheduled (reschedule using maintenance.reschedule)
+
+    RescheduleTaskRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [maintenance.reschedule]
+        data:
+          type: object
+          required:
+            - taskId
+            - newDueDate
+          properties:
+            taskId:
+              type: string
+              format: uuid
+            newDueDate:
+              type: string
+              format: date
+              description: New due date (original scheduled date is preserved for audit)
+
+    CompleteTaskRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [maintenance.complete]
+        data:
+          type: object
+          required:
+            - taskId
+          properties:
+            taskId:
+              type: string
+              format: uuid
+            notes:
+              type: string
+              description: Completion notes (work performed, findings)
+              nullable: true
+            cost:
+              type: number
+              format: double
+              minimum: 0
+              description: Total cost of maintenance
+              nullable: true
+            durationMinutes:
+              type: integer
+              minimum: 1
+              description: Time taken to complete (minutes)
+              nullable: true
+
+    CreateRecurringTaskRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [maintenance.createRecurring]
+        data:
+          type: object
+          required:
+            - vehicleId
+            - type
+            - description
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+            type:
+              type: string
+              enum: [Preventive, Corrective, Predictive, Inspection & Compliance]
+            description:
+              type: string
+              minLength: 1
+              maxLength: 500
+            priority:
+              type: string
+              enum: [Low, Medium, High]
+              default: Medium
+            recurrenceIntervalDays:
+              type: integer
+              minimum: 1
+              description: Days between occurrences (time-based)
+              nullable: true
+            recurrenceIntervalKm:
+              type: integer
+              minimum: 1
+              description: Kilometers between occurrences (mileage-based)
+              nullable: true
+            assignedTechnicianId:
+              type: string
+              format: uuid
+              description: Default technician for auto-generated tasks
+              nullable: true
+
+    MaintenanceTask:
+      type: object
+      required:
+        - id
+        - organizationId
+        - vehicleId
+        - type
+        - description
+        - priority
+        - status
+        - dueDate
+        - isRecurring
+        - createdBy
+        - createdAt
+        - changedBy
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique task identifier
+        organizationId:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+          description: Vehicle requiring maintenance
+        type:
+          type: string
+          enum: [Preventive, Corrective, Predictive, Inspection & Compliance]
+        description:
+          type: string
+          description: Maintenance description
+        priority:
+          type: string
+          enum: [Low, Medium, High]
+        status:
+          type: string
+          enum: [scheduled, in-progress, completed]
+        dueDate:
+          type: string
+          format: date
+          description: When maintenance is due
+        scheduledDate:
+          type: string
+          format: date
+          description: Originally scheduled date (preserved on reschedule)
+          nullable: true
+        startDate:
+          type: string
+          format: date-time
+          description: When work actually started
+          nullable: true
+        completionDate:
+          type: string
+          format: date-time
+          description: When work was completed
+          nullable: true
+        assignedTechnicianId:
+          type: string
+          format: uuid
+          description: Technician assigned to this task
+          nullable: true
+        durationMinutes:
+          type: integer
+          description: Time taken to complete (minutes)
+          nullable: true
+        notes:
+          type: string
+          description: Detailed notes about work performed
+          nullable: true
+        cost:
+          type: number
+          format: double
+          description: Total cost of maintenance
+          nullable: true
+        isRecurring:
+          type: boolean
+          description: Whether this generates recurring tasks
+        recurrenceIntervalDays:
+          type: integer
+          description: Days between occurrences (time-based)
+          nullable: true
+        recurrenceIntervalKm:
+          type: integer
+          description: Kilometers between occurrences (mileage-based)
+          nullable: true
+        parentTaskId:
+          type: string
+          format: uuid
+          description: Parent task if auto-generated from recurring
+          nullable: true
+        nextOccurrenceDate:
+          type: string
+          format: date
+          description: Calculated next due date for recurring tasks
+          nullable: true
+        lastGeneratedDate:
+          type: string
+          format: date
+          description: Last date a child task was generated
+          nullable: true
+        cancelledAt:
+          type: string
+          format: date-time
+          description: When recurring task generation was cancelled
+          nullable: true
+        createdBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        changedBy:
+          type: string
+          format: uuid
+        updatedAt:
+          type: string
+          format: date-time
+
+    TaskResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum:
+            - maintenance.create.success
+            - maintenance.get.success
+            - maintenance.update.success
+            - maintenance.updateStatus.success
+            - maintenance.reschedule.success
+            - maintenance.complete.success
+            - maintenance.createRecurring.success
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - task
+          properties:
+            task:
+              $ref: '#/components/schemas/MaintenanceTask'
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    ListTasksResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [maintenance.list.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - tasks
+            - totalCount
+          properties:
+            tasks:
+              type: array
+              items:
+                $ref: '#/components/schemas/MaintenanceTask'
+            totalCount:
+              type: integer
+            scheduledCount:
+              type: integer
+              description: Number of scheduled tasks
+            inProgressCount:
+              type: integer
+              description: Number of in-progress tasks
+            completedCount:
+              type: integer
+              description: Number of completed tasks
+            overdueCount:
+              type: integer
+              description: Number of overdue tasks (dueDate < TODAY, status != completed)
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    AuthToken:
+      type: object
+      required:
+        - value
+        - ttl
+        - username
+      properties:
+        value:
+          type: string
+        ttl:
+          type: integer
+          format: int64
+        username:
+          type: string
+
+    User:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Fleet Manager, Technician]
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+        msgKey:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingFields:
+              value:
+                status: 400
+                msgKey: error.validation.missingFields
+                message: "Missing required fields: vehicleId, description, dueDate"
+                data: {}
+            invalidStatus:
+              value:
+                status: 400
+                msgKey: error.validation.invalidStatusTransition
+                message: "Invalid status transition: completed → in-progress"
+                data: {}
+            invalidRecurrence:
+              value:
+                status: 400
+                msgKey: error.validation.invalidRecurrence
+                message: At least one of recurrenceIntervalDays or recurrenceIntervalKm must be set
+                data: {}
+            completionDateBeforeStart:
+              value:
+                status: 400
+                msgKey: error.validation.completionBeforeStart
+                message: Completion date cannot be before start date
+                data: {}
+
+    UnauthorizedError:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 401
+            msgKey: error.token.expired
+            message: Authentication token has expired
+            data: {}
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            technicianCannotCreate:
+              value:
+                status: 403
+                msgKey: error.forbidden.technicianCreateTask
+                message: Technicians cannot create maintenance tasks
+                data: {}
+            technicianNotAssigned:
+              value:
+                status: 403
+                msgKey: error.forbidden.technicianNotAssigned
+                message: Technicians can only update tasks assigned to them
+                data: {}
+            technicianCannotDelete:
+              value:
+                status: 403
+                msgKey: error.forbidden.technicianDeleteTask
+                message: Technicians cannot delete maintenance tasks
+                data: {}
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            taskNotFound:
+              value:
+                status: 404
+                msgKey: error.maintenance.notFound
+                message: Maintenance task not found
+                data: {}
+            vehicleNotFound:
+              value:
+                status: 404
+                msgKey: error.vehicle.notFound
+                message: Vehicle not found
+                data: {}
+            technicianNotFound:
+              value:
+                status: 404
+                msgKey: error.user.notFound
+                message: Assigned technician not found
+                data: {}
+
+    ConflictError:
+      description: Resource conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            alreadyCompleted:
+              value:
+                status: 409
+                msgKey: error.maintenance.alreadyCompleted
+                message: Task is already completed
+                data: {}
+            vehicleArchived:
+              value:
+                status: 409
+                msgKey: error.vehicle.archived
+                message: Cannot create maintenance task for archived vehicle
+                data: {}
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 500
+            msgKey: error.internal
+            message: An internal error occurred
+            data: {}
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT token from authentication
+
+security:
+  - BearerAuth: []

@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Système de Gestion de Fichiers",
+    "appName": "AutoCheck",
     "loading": "Chargement...",
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -22,7 +22,11 @@
     "optional": "Optionnel",
     "createdAt": "Créé le",
     "updatedAt": "Mis à jour le",
-    "lastModified": "Dernière modification"
+    "lastModified": "Dernière modification",
+    "create": "Créer",
+    "update": "Mettre à jour",
+    "view": "Voir",
+    "archive": "Archiver"
   },
   "auth": {
     "signup": {
@@ -127,5 +131,97 @@
     "switch": "Changer de Langue",
     "en": "English",
     "fr": "Français"
+  },
+  "fleet": {
+    "title": "Flottes",
+    "management": {
+      "title": "Gestion des Flottes",
+      "subtitle": "Gérez vos flottes de véhicules"
+    },
+    "create": "Créer une Flotte",
+    "edit": "Modifier la Flotte",
+    "vehicles": "véhicules",
+    "form": {
+      "name": "Nom de la Flotte",
+      "description": "Description"
+    },
+    "empty": {
+      "title": "Aucune flotte trouvée",
+      "subtitle": "Créez votre première flotte pour commencer"
+    },
+    "success": {
+      "created": "Flotte créée avec succès",
+      "updated": "Flotte mise à jour avec succès",
+      "deleted": "Flotte supprimée avec succès"
+    },
+    "error": {
+      "fetchFailed": "Échec du chargement des flottes",
+      "saveFailed": "Échec de l'enregistrement de la flotte",
+      "deleteFailed": "Échec de la suppression de la flotte"
+    },
+    "delete": {
+      "title": "Supprimer la Flotte",
+      "confirm": "Êtes-vous sûr de vouloir supprimer la flotte \"{name}\"?",
+      "warning": "Tous les véhicules seront retirés de cette flotte mais ne seront pas supprimés."
+    }
+  },
+  "vehicle": {
+    "title": "Véhicules",
+    "management": {
+      "title": "Gestion des Véhicules",
+      "subtitle": "Gérez vos véhicules de flotte"
+    },
+    "create": "Créer un Véhicule",
+    "edit": "Modifier le Véhicule",
+    "archived": "Archivé",
+    "seats": "sièges",
+    "odometer": "Odomètre",
+    "archivedOn": "Archivé le",
+    "showArchived": "Afficher archivés",
+    "form": {
+      "make": "Marque",
+      "model": "Modèle",
+      "year": "Année",
+      "seats": "Sièges",
+      "licensePlate": "Plaque d'Immatriculation",
+      "vehicleType": "Type de Véhicule",
+      "currentOdometer": "Odomètre Actuel",
+      "insuranceExpiry": "Expiration de l'Assurance"
+    },
+    "types": {
+      "car": "Voiture",
+      "truck": "Camion",
+      "van": "Fourgon",
+      "suv": "VUS",
+      "motorcycle": "Motocyclette",
+      "bus": "Autobus",
+      "other": "Autre"
+    },
+    "empty": {
+      "title": "Aucun véhicule trouvé",
+      "subtitle": "Créez votre premier véhicule pour commencer"
+    },
+    "success": {
+      "created": "Véhicule créé avec succès",
+      "updated": "Véhicule mis à jour avec succès",
+      "archived": "Véhicule archivé avec succès"
+    },
+    "error": {
+      "fetchFailed": "Échec du chargement des véhicules",
+      "saveFailed": "Échec de l'enregistrement du véhicule",
+      "archiveFailed": "Échec de l'archivage du véhicule"
+    },
+    "archive": {
+      "title": "Archiver le Véhicule",
+      "confirm": "Êtes-vous sûr de vouloir archiver le véhicule {vehicle}?",
+      "reason": "Raison de l'archivage",
+      "warning": "Ce véhicule sera archivé et les tâches de maintenance futures seront annulées."
+    }
+  },
+  "validation": {
+    "required": "{field} est requis",
+    "minLength": "{field} doit contenir au moins {length} caractères",
+    "min": "{field} doit être au moins {value}",
+    "max": "{field} ne doit pas dépasser {value}"
   }
 }

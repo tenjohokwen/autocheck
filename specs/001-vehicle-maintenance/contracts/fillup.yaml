@@ -1,0 +1,916 @@
+openapi: 3.0.0
+info:
+  title: AutoCheck Fuel Fill-up Tracking API
+  description: |
+    Fuel fill-up tracking and efficiency calculation endpoints for AutoCheck.
+
+    All endpoints use POST requests with action-based routing following the GAS backend pattern.
+    Request format: `{ action: "handler.method", data: {...} }`
+
+    **Fill-up Tracking Features**:
+    - Record fuel fill-ups with date, amount, cost, odometer
+    - Calculate fuel efficiency (MPG, L/100km, km/L)
+    - Track fill-up history for each vehicle
+    - Support both metric (liters/km) and imperial (gallons/miles) units
+    - Auto-generate expense records for each fill-up
+
+    **Efficiency Calculation**:
+    - First fill-up: Efficiency shown as "N/A" (no previous data)
+    - Subsequent fill-ups: Calculate based on odometer difference
+    - Metric: L/100km or km/L
+    - Imperial: MPG (miles per gallon)
+    - Average efficiency calculated across all fill-ups
+
+    **Role-Based Access**:
+    - Fleet Manager: Full CRUD access to all fill-up records
+    - Technician: Can create and view fill-ups, cannot delete
+
+    **Business Rules**:
+    - Odometer reading must be >= previous reading
+    - Each fill-up auto-creates an Expense record (category: fuel)
+    - Efficiency only calculated for full tank fill-ups (isFull = true)
+    - Fill-up date should not be in the future (warning)
+  version: 1.0.0
+  contact:
+    name: AutoCheck API Support
+
+servers:
+  - url: https://script.google.com/macros/s/{deploymentId}/exec
+    description: Google Apps Script deployment endpoint
+
+paths:
+  /:
+    post:
+      summary: Fill-up tracking endpoint router
+      description: |
+        All fill-up operations are routed through POST to this endpoint.
+        The `action` field determines which handler method is invoked.
+      operationId: fillupRouter
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CreateFillUpRequest'
+                - $ref: '#/components/schemas/GetFillUpRequest'
+                - $ref: '#/components/schemas/ListFillUpsRequest'
+                - $ref: '#/components/schemas/UpdateFillUpRequest'
+                - $ref: '#/components/schemas/DeleteFillUpRequest'
+                - $ref: '#/components/schemas/GetEfficiencyRequest'
+            examples:
+              createFillUp:
+                summary: Record a fuel fill-up
+                value:
+                  action: fillup.create
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    fillUpDate: "2025-01-15"
+                    fuelAmount: 45.5
+                    fuelCost: 68.25
+                    odometerReading: 52000
+                    fuelUnit: liters
+                    distanceUnit: km
+                    isFull: true
+                    location: Shell Station Main St
+                    notes: Regular unleaded
+              getFillUp:
+                summary: Get fill-up details
+                value:
+                  action: fillup.get
+                  data:
+                    fillUpId: fup-550e8400-e29b-41d4-a716-446655440000
+              listFillUps:
+                summary: List fill-ups for a vehicle
+                value:
+                  action: fillup.list
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    dateFrom: "2025-01-01"
+                    dateTo: "2025-12-31"
+                    sortBy: fillUpDate
+                    sortOrder: desc
+              getEfficiency:
+                summary: Get vehicle fuel efficiency
+                value:
+                  action: fillup.getEfficiency
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    dateFrom: "2025-01-01"
+                    dateTo: "2025-12-31"
+      responses:
+        '200':
+          description: Successful fill-up operation
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/FillUpResponse'
+                  - $ref: '#/components/schemas/ListFillUpsResponse'
+                  - $ref: '#/components/schemas/EfficiencyResponse'
+              examples:
+                createSuccess:
+                  summary: Fill-up recorded successfully
+                  value:
+                    status: 200
+                    msgKey: fillup.create.success
+                    message: Fill-up recorded successfully. Expense record created.
+                    data:
+                      fillUp:
+                        id: fup-550e8400-e29b-41d4-a716-446655440000
+                        organizationId: org-550e8400-e29b-41d4-a716-446655440000
+                        vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                        fillUpDate: "2025-01-15"
+                        fuelAmount: 45.5
+                        fuelCost: 68.25
+                        odometerReading: 52000
+                        fuelUnit: liters
+                        distanceUnit: km
+                        isFull: true
+                        previousOdometerReading: 51500
+                        distanceTraveled: 500
+                        efficiency: 9.1
+                        efficiencyUnit: L/100km
+                        notes: Regular unleaded
+                        location: Shell Station Main St
+                        createdBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        createdAt: "2025-01-15T14:30:00Z"
+                        changedBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        updatedAt: "2025-01-15T14:30:00Z"
+                      expenseId: exp-660e8400-e29b-41d4-a716-446655440001
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                firstFillUpSuccess:
+                  summary: First fill-up (no efficiency calculated)
+                  value:
+                    status: 200
+                    msgKey: fillup.create.success
+                    message: Fill-up recorded successfully. Expense record created.
+                    data:
+                      fillUp:
+                        id: fup-550e8400-e29b-41d4-a716-446655440000
+                        vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                        fillUpDate: "2025-01-15"
+                        fuelAmount: 45.5
+                        fuelCost: 68.25
+                        odometerReading: 50000
+                        fuelUnit: liters
+                        distanceUnit: km
+                        isFull: true
+                        previousOdometerReading: null
+                        distanceTraveled: null
+                        efficiency: null
+                        efficiencyUnit: "N/A"
+                        notes: First fill-up
+                        location: Shell Station Main St
+                      expenseId: exp-660e8400-e29b-41d4-a716-446655440001
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                listSuccess:
+                  summary: Fill-ups listed successfully
+                  value:
+                    status: 200
+                    msgKey: fillup.list.success
+                    message: Fill-ups retrieved successfully
+                    data:
+                      fillUps:
+                        - id: fup-550e8400-e29b-41d4-a716-446655440000
+                          fillUpDate: "2025-01-15"
+                          fuelAmount: 45.5
+                          fuelCost: 68.25
+                          odometerReading: 52000
+                          efficiency: 9.1
+                          efficiencyUnit: L/100km
+                        - id: fup-660e8400-e29b-41d4-a716-446655440001
+                          fillUpDate: "2025-01-10"
+                          fuelAmount: 44.0
+                          fuelCost: 66.00
+                          odometerReading: 51500
+                          efficiency: 8.8
+                          efficiencyUnit: L/100km
+                      totalCount: 2
+                      totalFuelAmount: 89.5
+                      totalFuelCost: 134.25
+                      averageEfficiency: 8.95
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                efficiencySuccess:
+                  summary: Vehicle efficiency calculated
+                  value:
+                    status: 200
+                    msgKey: fillup.getEfficiency.success
+                    message: Efficiency calculated successfully
+                    data:
+                      vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                      averageEfficiency: 8.95
+                      efficiencyUnit: L/100km
+                      totalFillUps: 12
+                      totalDistance: 6000
+                      totalFuelAmount: 537.0
+                      totalFuelCost: 805.50
+                      bestEfficiency: 7.8
+                      worstEfficiency: 10.2
+                      efficiencyTrend:
+                        - date: "2025-01-01"
+                          efficiency: 9.2
+                        - date: "2025-01-05"
+                          efficiency: 8.8
+                        - date: "2025-01-10"
+                          efficiency: 8.8
+                        - date: "2025-01-15"
+                          efficiency: 9.1
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    CreateFillUpRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [fillup.create]
+        data:
+          type: object
+          required:
+            - vehicleId
+            - fillUpDate
+            - fuelAmount
+            - fuelCost
+            - odometerReading
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Vehicle that was refueled
+            fillUpDate:
+              type: string
+              format: date
+              description: Date of refueling (should not be in future)
+            fuelAmount:
+              type: number
+              format: double
+              minimum: 0.01
+              description: Amount of fuel added
+              example: 45.5
+            fuelCost:
+              type: number
+              format: double
+              minimum: 0
+              description: Total cost of fuel
+              example: 68.25
+            odometerReading:
+              type: integer
+              minimum: 0
+              description: Odometer reading at fill-up (must be >= previous reading)
+              example: 52000
+            fuelUnit:
+              type: string
+              enum: [liters, gallons]
+              default: liters
+              description: Fuel measurement unit
+            distanceUnit:
+              type: string
+              enum: [km, miles]
+              default: km
+              description: Distance measurement unit
+            isFull:
+              type: boolean
+              default: true
+              description: Whether tank was filled completely (efficiency only calculated if true)
+            location:
+              type: string
+              maxLength: 200
+              description: Gas station or location
+              example: Shell Station Main St
+              nullable: true
+            notes:
+              type: string
+              maxLength: 500
+              description: Additional notes
+              example: Regular unleaded
+              nullable: true
+
+    GetFillUpRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [fillup.get]
+        data:
+          type: object
+          required:
+            - fillUpId
+          properties:
+            fillUpId:
+              type: string
+              format: uuid
+              description: Fill-up ID to retrieve
+
+    ListFillUpsRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [fillup.list]
+        data:
+          type: object
+          required:
+            - vehicleId
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Vehicle ID to list fill-ups for
+            dateFrom:
+              type: string
+              format: date
+              description: Filter by date range start
+              nullable: true
+            dateTo:
+              type: string
+              format: date
+              description: Filter by date range end
+              nullable: true
+            sortBy:
+              type: string
+              enum: [fillUpDate, odometerReading, fuelAmount, fuelCost]
+              default: fillUpDate
+            sortOrder:
+              type: string
+              enum: [asc, desc]
+              default: desc
+
+    UpdateFillUpRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [fillup.update]
+        data:
+          type: object
+          required:
+            - fillUpId
+          properties:
+            fillUpId:
+              type: string
+              format: uuid
+            fillUpDate:
+              type: string
+              format: date
+              nullable: true
+            fuelAmount:
+              type: number
+              format: double
+              minimum: 0.01
+              nullable: true
+            fuelCost:
+              type: number
+              format: double
+              minimum: 0
+              nullable: true
+            odometerReading:
+              type: integer
+              minimum: 0
+              nullable: true
+            isFull:
+              type: boolean
+              nullable: true
+            location:
+              type: string
+              maxLength: 200
+              nullable: true
+            notes:
+              type: string
+              maxLength: 500
+              nullable: true
+
+    DeleteFillUpRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [fillup.delete]
+        data:
+          type: object
+          required:
+            - fillUpId
+          properties:
+            fillUpId:
+              type: string
+              format: uuid
+              description: Fill-up ID to delete (also deletes associated expense)
+
+    GetEfficiencyRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [fillup.getEfficiency]
+        data:
+          type: object
+          required:
+            - vehicleId
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Vehicle to calculate efficiency for
+            dateFrom:
+              type: string
+              format: date
+              description: Calculate efficiency from this date
+              nullable: true
+            dateTo:
+              type: string
+              format: date
+              description: Calculate efficiency to this date
+              nullable: true
+
+    FillUp:
+      type: object
+      required:
+        - id
+        - organizationId
+        - vehicleId
+        - fillUpDate
+        - fuelAmount
+        - fuelCost
+        - odometerReading
+        - fuelUnit
+        - distanceUnit
+        - isFull
+        - createdBy
+        - createdAt
+        - changedBy
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique fill-up identifier
+        organizationId:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+          description: Vehicle that was refueled
+        fillUpDate:
+          type: string
+          format: date
+          description: Date of refueling
+        fuelAmount:
+          type: number
+          format: double
+          description: Amount of fuel added
+          example: 45.5
+        fuelCost:
+          type: number
+          format: double
+          description: Total cost of fuel
+          example: 68.25
+        odometerReading:
+          type: integer
+          description: Odometer reading at fill-up
+          example: 52000
+        fuelUnit:
+          type: string
+          enum: [liters, gallons]
+          description: Fuel measurement unit
+        distanceUnit:
+          type: string
+          enum: [km, miles]
+          description: Distance measurement unit
+        isFull:
+          type: boolean
+          description: Whether tank was filled completely
+        previousOdometerReading:
+          type: integer
+          description: Previous fill-up odometer reading (computed)
+          nullable: true
+        distanceTraveled:
+          type: integer
+          description: Distance since last fill-up (computed)
+          nullable: true
+        efficiency:
+          type: number
+          format: double
+          description: Calculated fuel efficiency (null for first fill-up)
+          nullable: true
+        efficiencyUnit:
+          type: string
+          description: Efficiency unit (L/100km, MPG, km/L, or N/A)
+          example: L/100km
+        notes:
+          type: string
+          description: Additional notes
+          nullable: true
+        location:
+          type: string
+          description: Gas station or location
+          nullable: true
+        createdBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        changedBy:
+          type: string
+          format: uuid
+        updatedAt:
+          type: string
+          format: date-time
+
+    FillUpResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum:
+            - fillup.create.success
+            - fillup.get.success
+            - fillup.update.success
+            - fillup.delete.success
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            fillUp:
+              $ref: '#/components/schemas/FillUp'
+            expenseId:
+              type: string
+              format: uuid
+              description: ID of auto-created expense record
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    ListFillUpsResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [fillup.list.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - fillUps
+            - totalCount
+          properties:
+            fillUps:
+              type: array
+              items:
+                $ref: '#/components/schemas/FillUp'
+            totalCount:
+              type: integer
+              description: Total number of fill-ups
+            totalFuelAmount:
+              type: number
+              format: double
+              description: Total fuel added across all fill-ups
+            totalFuelCost:
+              type: number
+              format: double
+              description: Total fuel cost across all fill-ups
+            averageEfficiency:
+              type: number
+              format: double
+              description: Average fuel efficiency (excludes null values)
+              nullable: true
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    EfficiencyResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [fillup.getEfficiency.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - vehicleId
+            - efficiencyUnit
+            - totalFillUps
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+            averageEfficiency:
+              type: number
+              format: double
+              description: Average fuel efficiency
+              nullable: true
+            efficiencyUnit:
+              type: string
+              description: Efficiency unit
+              example: L/100km
+            totalFillUps:
+              type: integer
+              description: Total number of fill-ups in period
+            totalDistance:
+              type: integer
+              description: Total distance traveled in period
+              nullable: true
+            totalFuelAmount:
+              type: number
+              format: double
+              description: Total fuel consumed in period
+              nullable: true
+            totalFuelCost:
+              type: number
+              format: double
+              description: Total fuel cost in period
+              nullable: true
+            bestEfficiency:
+              type: number
+              format: double
+              description: Best (lowest/highest) efficiency value
+              nullable: true
+            worstEfficiency:
+              type: number
+              format: double
+              description: Worst (highest/lowest) efficiency value
+              nullable: true
+            efficiencyTrend:
+              type: array
+              description: Efficiency over time
+              items:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  efficiency:
+                    type: number
+                    format: double
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    AuthToken:
+      type: object
+      required:
+        - value
+        - ttl
+        - username
+      properties:
+        value:
+          type: string
+        ttl:
+          type: integer
+          format: int64
+        username:
+          type: string
+
+    User:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Fleet Manager, Technician]
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+        msgKey:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingFields:
+              value:
+                status: 400
+                msgKey: error.validation.missingFields
+                message: "Missing required fields: vehicleId, fillUpDate, odometerReading"
+                data: {}
+            odometerDecreased:
+              value:
+                status: 400
+                msgKey: error.validation.odometerDecreased
+                message: Odometer reading (51000) cannot be less than previous reading (52000)
+                data: {}
+            futureFillUpDate:
+              value:
+                status: 400
+                msgKey: error.validation.futureFillUpDate
+                message: Fill-up date cannot be in the future
+                data: {}
+            invalidFuelAmount:
+              value:
+                status: 400
+                msgKey: error.validation.invalidFuelAmount
+                message: Fuel amount must be greater than 0
+                data: {}
+
+    UnauthorizedError:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 401
+            msgKey: error.token.expired
+            message: Authentication token has expired
+            data: {}
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            technicianCannotDelete:
+              value:
+                status: 403
+                msgKey: error.forbidden.technicianDeleteFillUp
+                message: Technicians cannot delete fill-up records
+                data: {}
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            fillUpNotFound:
+              value:
+                status: 404
+                msgKey: error.fillup.notFound
+                message: Fill-up record not found
+                data: {}
+            vehicleNotFound:
+              value:
+                status: 404
+                msgKey: error.vehicle.notFound
+                message: Vehicle not found
+                data: {}
+
+    ConflictError:
+      description: Resource conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            duplicateFillUp:
+              value:
+                status: 409
+                msgKey: error.fillup.duplicate
+                message: A fill-up with the same date and odometer reading already exists for this vehicle
+                data: {}
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 500
+            msgKey: error.internal
+            message: An internal error occurred
+            data: {}
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT token from authentication
+
+security:
+  - BearerAuth: []

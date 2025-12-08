@@ -1,0 +1,738 @@
+openapi: 3.0.0
+info:
+  title: AutoCheck Fleet Management API
+  description: |
+    Fleet management endpoints for the AutoCheck Vehicle Maintenance Management System.
+
+    All endpoints use POST requests with action-based routing following the GAS backend pattern.
+    Request format: `{ action: "handler.method", data: {...} }`
+
+    **Fleet Management Features**:
+    - Create and manage logical groupings of vehicles (fleets)
+    - Assign vehicles to fleets or leave them as individual vehicles
+    - View fleet statistics (vehicle count, fleet details)
+    - Update fleet information (name, description)
+    - Delete fleets (vehicles become unassigned)
+
+    **Role-Based Access**:
+    - Fleet Manager: Full CRUD access to all fleets
+    - Technician: Read-only access to fleet information
+  version: 1.0.0
+  contact:
+    name: AutoCheck API Support
+
+servers:
+  - url: https://script.google.com/macros/s/{deploymentId}/exec
+    description: Google Apps Script deployment endpoint
+
+paths:
+  /:
+    post:
+      summary: Fleet management endpoint router
+      description: |
+        All fleet operations are routed through POST to this endpoint.
+        The `action` field determines which handler method is invoked.
+      operationId: fleetRouter
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CreateFleetRequest'
+                - $ref: '#/components/schemas/GetFleetRequest'
+                - $ref: '#/components/schemas/ListFleetsRequest'
+                - $ref: '#/components/schemas/UpdateFleetRequest'
+                - $ref: '#/components/schemas/DeleteFleetRequest'
+            examples:
+              createFleet:
+                summary: Create a new fleet
+                value:
+                  action: fleet.create
+                  data:
+                    name: Delivery Trucks
+                    description: Fleet for local deliveries
+              getFleet:
+                summary: Get fleet details
+                value:
+                  action: fleet.get
+                  data:
+                    fleetId: flt-550e8400-e29b-41d4-a716-446655440000
+              listFleets:
+                summary: List all fleets
+                value:
+                  action: fleet.list
+                  data: {}
+              updateFleet:
+                summary: Update fleet information
+                value:
+                  action: fleet.update
+                  data:
+                    fleetId: flt-550e8400-e29b-41d4-a716-446655440000
+                    name: Regional Delivery Trucks
+                    description: Expanded to include regional routes
+              deleteFleet:
+                summary: Delete a fleet
+                value:
+                  action: fleet.delete
+                  data:
+                    fleetId: flt-550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Successful fleet operation
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/CreateFleetResponse'
+                  - $ref: '#/components/schemas/GetFleetResponse'
+                  - $ref: '#/components/schemas/ListFleetsResponse'
+                  - $ref: '#/components/schemas/UpdateFleetResponse'
+                  - $ref: '#/components/schemas/DeleteFleetResponse'
+              examples:
+                createSuccess:
+                  summary: Fleet created successfully
+                  value:
+                    status: 200
+                    msgKey: fleet.create.success
+                    message: Fleet created successfully
+                    data:
+                      fleet:
+                        id: flt-550e8400-e29b-41d4-a716-446655440000
+                        organizationId: org-550e8400-e29b-41d4-a716-446655440000
+                        name: Delivery Trucks
+                        description: Fleet for local deliveries
+                        vehicleCount: 0
+                        createdBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        createdAt: "2025-01-15T10:30:00Z"
+                        changedBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        updatedAt: "2025-01-15T10:30:00Z"
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                getSuccess:
+                  summary: Fleet retrieved successfully
+                  value:
+                    status: 200
+                    msgKey: fleet.get.success
+                    message: Fleet retrieved successfully
+                    data:
+                      fleet:
+                        id: flt-550e8400-e29b-41d4-a716-446655440000
+                        organizationId: org-550e8400-e29b-41d4-a716-446655440000
+                        name: Delivery Trucks
+                        description: Fleet for local deliveries
+                        vehicleCount: 15
+                        createdBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        createdAt: "2025-01-10T10:30:00Z"
+                        changedBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        updatedAt: "2025-01-15T10:30:00Z"
+                      vehicles:
+                        - id: veh-123e4567-e89b-12d3-a456-426614174000
+                          make: Toyota
+                          model: Camry
+                          year: 2020
+                          licensePlate: ABC-123
+                          vehicleType: Sedan
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                listSuccess:
+                  summary: Fleets listed successfully
+                  value:
+                    status: 200
+                    msgKey: fleet.list.success
+                    message: Fleets retrieved successfully
+                    data:
+                      fleets:
+                        - id: flt-550e8400-e29b-41d4-a716-446655440000
+                          name: Delivery Trucks
+                          description: Fleet for local deliveries
+                          vehicleCount: 15
+                        - id: flt-660e8400-e29b-41d4-a716-446655440001
+                          name: Executive Vehicles
+                          description: Company executive vehicles
+                          vehicleCount: 5
+                      totalCount: 2
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    CreateFleetRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [fleet.create]
+          description: Action identifier for fleet creation
+        data:
+          type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 100
+              description: Fleet name (must be unique within organization)
+              example: Delivery Trucks
+            description:
+              type: string
+              maxLength: 500
+              description: Optional fleet description
+              example: Fleet for local deliveries
+              nullable: true
+
+    GetFleetRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [fleet.get]
+          description: Action identifier for getting fleet details
+        data:
+          type: object
+          required:
+            - fleetId
+          properties:
+            fleetId:
+              type: string
+              format: uuid
+              description: Fleet ID to retrieve
+              example: flt-550e8400-e29b-41d4-a716-446655440000
+            includeVehicles:
+              type: boolean
+              default: true
+              description: Whether to include vehicle list in response
+
+    ListFleetsRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [fleet.list]
+          description: Action identifier for listing fleets
+        data:
+          type: object
+          properties:
+            sortBy:
+              type: string
+              enum: [name, vehicleCount, createdAt]
+              default: name
+              description: Field to sort by
+            sortOrder:
+              type: string
+              enum: [asc, desc]
+              default: asc
+              description: Sort order
+
+    UpdateFleetRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [fleet.update]
+          description: Action identifier for fleet update
+        data:
+          type: object
+          required:
+            - fleetId
+          properties:
+            fleetId:
+              type: string
+              format: uuid
+              description: Fleet ID to update
+              example: flt-550e8400-e29b-41d4-a716-446655440000
+            name:
+              type: string
+              minLength: 1
+              maxLength: 100
+              description: Updated fleet name
+              example: Regional Delivery Trucks
+              nullable: true
+            description:
+              type: string
+              maxLength: 500
+              description: Updated fleet description
+              example: Expanded to include regional routes
+              nullable: true
+
+    DeleteFleetRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [fleet.delete]
+          description: Action identifier for fleet deletion
+        data:
+          type: object
+          required:
+            - fleetId
+          properties:
+            fleetId:
+              type: string
+              format: uuid
+              description: Fleet ID to delete
+              example: flt-550e8400-e29b-41d4-a716-446655440000
+
+    Fleet:
+      type: object
+      required:
+        - id
+        - organizationId
+        - name
+        - vehicleCount
+        - createdBy
+        - createdAt
+        - changedBy
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique fleet identifier
+          example: flt-550e8400-e29b-41d4-a716-446655440000
+        organizationId:
+          type: string
+          format: uuid
+          description: Organization this fleet belongs to
+          example: org-550e8400-e29b-41d4-a716-446655440000
+        name:
+          type: string
+          description: Fleet name
+          example: Delivery Trucks
+        description:
+          type: string
+          description: Fleet description
+          example: Fleet for local deliveries
+          nullable: true
+        vehicleCount:
+          type: integer
+          minimum: 0
+          description: Count of active (non-archived) vehicles in fleet
+          example: 15
+        createdBy:
+          type: string
+          format: uuid
+          description: User ID who created this fleet
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        changedBy:
+          type: string
+          format: uuid
+          description: User ID who last modified this fleet
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+
+    VehicleSummary:
+      type: object
+      description: Minimal vehicle information for fleet listings
+      required:
+        - id
+        - make
+        - model
+        - year
+        - licensePlate
+        - vehicleType
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Vehicle ID
+        make:
+          type: string
+          description: Vehicle manufacturer
+          example: Toyota
+        model:
+          type: string
+          description: Vehicle model
+          example: Camry
+        year:
+          type: integer
+          description: Model year
+          example: 2020
+        licensePlate:
+          type: string
+          description: License plate number
+          example: ABC-123
+        vehicleType:
+          type: string
+          enum: [Sedan, SUV, Truck, Van, Motorcycle, Other]
+          description: Vehicle type
+
+    CreateFleetResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [fleet.create.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - fleet
+          properties:
+            fleet:
+              $ref: '#/components/schemas/Fleet'
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    GetFleetResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [fleet.get.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - fleet
+          properties:
+            fleet:
+              $ref: '#/components/schemas/Fleet'
+            vehicles:
+              type: array
+              items:
+                $ref: '#/components/schemas/VehicleSummary'
+              description: List of vehicles in fleet (if includeVehicles=true)
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    ListFleetsResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [fleet.list.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - fleets
+            - totalCount
+          properties:
+            fleets:
+              type: array
+              items:
+                $ref: '#/components/schemas/Fleet'
+            totalCount:
+              type: integer
+              description: Total number of fleets
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    UpdateFleetResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [fleet.update.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - fleet
+          properties:
+            fleet:
+              $ref: '#/components/schemas/Fleet'
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    DeleteFleetResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [fleet.delete.success]
+        message:
+          type: string
+          example: Fleet deleted successfully. Vehicles have been unassigned from fleet.
+        data:
+          type: object
+          properties:
+            fleetId:
+              type: string
+              format: uuid
+              description: ID of deleted fleet
+            unassignedVehicleCount:
+              type: integer
+              description: Number of vehicles that were unassigned from fleet
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    AuthToken:
+      type: object
+      required:
+        - value
+        - ttl
+        - username
+      properties:
+        value:
+          type: string
+          description: JWT token or session token
+        ttl:
+          type: integer
+          format: int64
+          description: Token expiration timestamp (Unix milliseconds)
+        username:
+          type: string
+          description: Username/email associated with token
+
+    User:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Fleet Manager, Technician]
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+        msgKey:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingFields:
+              value:
+                status: 400
+                msgKey: error.validation.missingFields
+                message: "Missing required fields: name"
+                data: {}
+            nameToolong:
+              value:
+                status: 400
+                msgKey: error.validation.nameTooLong
+                message: Fleet name must be 100 characters or less
+                data: {}
+
+    UnauthorizedError:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 401
+            msgKey: error.token.expired
+            message: Authentication token has expired
+            data: {}
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            technicianCannotCreate:
+              value:
+                status: 403
+                msgKey: error.forbidden.technicianCreateFleet
+                message: Technicians cannot create fleets
+                data: {}
+            technicianCannotUpdate:
+              value:
+                status: 403
+                msgKey: error.forbidden.technicianUpdateFleet
+                message: Technicians cannot update fleets
+                data: {}
+            technicianCannotDelete:
+              value:
+                status: 403
+                msgKey: error.forbidden.technicianDeleteFleet
+                message: Technicians cannot delete fleets
+                data: {}
+
+    NotFoundError:
+      description: Fleet not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 404
+            msgKey: error.fleet.notFound
+            message: Fleet not found
+            data: {}
+
+    ConflictError:
+      description: Fleet name already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 409
+            msgKey: error.fleet.nameExists
+            message: A fleet with this name already exists in your organization
+            data: {}
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 500
+            msgKey: error.internal
+            message: An internal error occurred
+            data: {}
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT token from authentication
+
+security:
+  - BearerAuth: []

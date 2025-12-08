@@ -1,0 +1,902 @@
+openapi: 3.0.0
+info:
+  title: AutoCheck Vehicle Management API
+  description: |
+    Vehicle management endpoints for the AutoCheck Vehicle Maintenance Management System.
+
+    All endpoints use POST requests with action-based routing following the GAS backend pattern.
+    Request format: `{ action: "handler.method", data: {...} }`
+
+    **Vehicle Management Features**:
+    - Create vehicles with complete details (make, model, year, license plate, VIN, etc.)
+    - Update vehicle information and odometer readings
+    - Archive vehicles (soft delete) while retaining historical data
+    - Filter vehicles by fleet, vehicle type, archived status
+    - Assign vehicles to fleets or leave as individual vehicles
+    - Track vehicle insurance expiration dates
+
+    **Role-Based Access**:
+    - Fleet Manager: Full CRUD access to all vehicles
+    - Technician: Read-only access to vehicle information
+
+    **Business Rules**:
+    - Archived vehicles excluded from active vehicle lists but included in historical reports
+    - License plate must be unique within organization
+    - VIN must be unique if provided (17 characters)
+    - Odometer readings must be monotonically increasing
+    - Archiving a vehicle stops recurring maintenance task generation
+  version: 1.0.0
+  contact:
+    name: AutoCheck API Support
+
+servers:
+  - url: https://script.google.com/macros/s/{deploymentId}/exec
+    description: Google Apps Script deployment endpoint
+
+paths:
+  /:
+    post:
+      summary: Vehicle management endpoint router
+      description: |
+        All vehicle operations are routed through POST to this endpoint.
+        The `action` field determines which handler method is invoked.
+      operationId: vehicleRouter
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CreateVehicleRequest'
+                - $ref: '#/components/schemas/GetVehicleRequest'
+                - $ref: '#/components/schemas/ListVehiclesRequest'
+                - $ref: '#/components/schemas/UpdateVehicleRequest'
+                - $ref: '#/components/schemas/ArchiveVehicleRequest'
+                - $ref: '#/components/schemas/UpdateOdometerRequest'
+            examples:
+              createVehicle:
+                summary: Create a new vehicle
+                value:
+                  action: vehicle.create
+                  data:
+                    make: Toyota
+                    model: Camry
+                    year: 2020
+                    licensePlate: ABC-123
+                    vehicleType: Sedan
+                    numberOfSeats: 5
+                    currentOdometer: 50000
+                    fuelType: Gasoline
+                    color: Silver
+                    vin: 1HGBH41JXMN109186
+                    fleetId: flt-550e8400-e29b-41d4-a716-446655440000
+                    insuranceExpirationDate: "2025-12-31"
+              getVehicle:
+                summary: Get vehicle details
+                value:
+                  action: vehicle.get
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+              listVehicles:
+                summary: List all vehicles with filters
+                value:
+                  action: vehicle.list
+                  data:
+                    fleetId: flt-550e8400-e29b-41d4-a716-446655440000
+                    vehicleType: Sedan
+                    includeArchived: false
+                    sortBy: make
+                    sortOrder: asc
+              updateVehicle:
+                summary: Update vehicle information
+                value:
+                  action: vehicle.update
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    currentOdometer: 52000
+                    insuranceExpirationDate: "2026-12-31"
+                    color: Blue
+              archiveVehicle:
+                summary: Archive a vehicle (soft delete)
+                value:
+                  action: vehicle.archive
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    archivedReason: Sold to third party
+              updateOdometer:
+                summary: Update odometer reading
+                value:
+                  action: vehicle.updateOdometer
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    odometerReading: 52500
+      responses:
+        '200':
+          description: Successful vehicle operation
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/VehicleResponse'
+                  - $ref: '#/components/schemas/ListVehiclesResponse'
+                  - $ref: '#/components/schemas/ArchiveVehicleResponse'
+              examples:
+                createSuccess:
+                  summary: Vehicle created successfully
+                  value:
+                    status: 200
+                    msgKey: vehicle.create.success
+                    message: Vehicle created successfully
+                    data:
+                      vehicle:
+                        id: veh-550e8400-e29b-41d4-a716-446655440000
+                        organizationId: org-550e8400-e29b-41d4-a716-446655440000
+                        fleetId: flt-550e8400-e29b-41d4-a716-446655440000
+                        make: Toyota
+                        model: Camry
+                        year: 2020
+                        licensePlate: ABC-123
+                        vehicleType: Sedan
+                        numberOfSeats: 5
+                        currentOdometer: 50000
+                        fuelType: Gasoline
+                        color: Silver
+                        vin: 1HGBH41JXMN109186
+                        insuranceExpirationDate: "2025-12-31"
+                        archived: false
+                        archivedDate: null
+                        archivedReason: null
+                        createdBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        createdAt: "2025-01-15T10:30:00Z"
+                        changedBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        updatedAt: "2025-01-15T10:30:00Z"
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                listSuccess:
+                  summary: Vehicles listed successfully
+                  value:
+                    status: 200
+                    msgKey: vehicle.list.success
+                    message: Vehicles retrieved successfully
+                    data:
+                      vehicles:
+                        - id: veh-550e8400-e29b-41d4-a716-446655440000
+                          make: Toyota
+                          model: Camry
+                          year: 2020
+                          licensePlate: ABC-123
+                          vehicleType: Sedan
+                          currentOdometer: 50000
+                          fleetId: flt-550e8400-e29b-41d4-a716-446655440000
+                          archived: false
+                        - id: veh-660e8400-e29b-41d4-a716-446655440001
+                          make: Honda
+                          model: Accord
+                          year: 2021
+                          licensePlate: XYZ-789
+                          vehicleType: Sedan
+                          currentOdometer: 30000
+                          fleetId: flt-550e8400-e29b-41d4-a716-446655440000
+                          archived: false
+                      totalCount: 2
+                      activeCount: 2
+                      archivedCount: 0
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                archiveSuccess:
+                  summary: Vehicle archived successfully
+                  value:
+                    status: 200
+                    msgKey: vehicle.archive.success
+                    message: Vehicle archived successfully. Recurring maintenance tasks have been cancelled.
+                    data:
+                      vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                      archivedDate: "2025-01-15T10:30:00Z"
+                      cancelledRecurringTasks: 3
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    CreateVehicleRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [vehicle.create]
+        data:
+          type: object
+          required:
+            - make
+            - model
+            - year
+            - licensePlate
+            - vehicleType
+          properties:
+            make:
+              type: string
+              minLength: 1
+              maxLength: 50
+              description: Vehicle manufacturer
+              example: Toyota
+            model:
+              type: string
+              minLength: 1
+              maxLength: 50
+              description: Vehicle model
+              example: Camry
+            year:
+              type: integer
+              minimum: 1900
+              maximum: 2026
+              description: Model year (1900 to current year + 1)
+              example: 2020
+            licensePlate:
+              type: string
+              minLength: 1
+              maxLength: 20
+              description: License plate number (must be unique within organization)
+              example: ABC-123
+            vehicleType:
+              type: string
+              enum: [Sedan, SUV, Truck, Van, Motorcycle, Other]
+              description: Vehicle type category
+            numberOfSeats:
+              type: integer
+              minimum: 1
+              maximum: 99
+              default: 5
+              description: Passenger capacity
+            currentOdometer:
+              type: integer
+              minimum: 0
+              default: 0
+              description: Current odometer reading (km or miles)
+            fuelType:
+              type: string
+              enum: [Gasoline, Diesel, Electric, Hybrid, CNG]
+              default: Gasoline
+              description: Fuel type
+            color:
+              type: string
+              maxLength: 30
+              description: Vehicle color
+              example: Silver
+              nullable: true
+            vin:
+              type: string
+              pattern: '^[A-HJ-NPR-Z0-9]{17}$'
+              description: Vehicle Identification Number (17 characters, must be unique)
+              example: 1HGBH41JXMN109186
+              nullable: true
+            fleetId:
+              type: string
+              format: uuid
+              description: Fleet assignment (optional)
+              example: flt-550e8400-e29b-41d4-a716-446655440000
+              nullable: true
+            insuranceExpirationDate:
+              type: string
+              format: date
+              description: Insurance policy expiration date
+              example: "2025-12-31"
+              nullable: true
+
+    GetVehicleRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [vehicle.get]
+        data:
+          type: object
+          required:
+            - vehicleId
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Vehicle ID to retrieve
+
+    ListVehiclesRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [vehicle.list]
+        data:
+          type: object
+          properties:
+            fleetId:
+              type: string
+              format: uuid
+              description: Filter by fleet ID
+              nullable: true
+            vehicleType:
+              type: string
+              enum: [Sedan, SUV, Truck, Van, Motorcycle, Other]
+              description: Filter by vehicle type
+              nullable: true
+            includeArchived:
+              type: boolean
+              default: false
+              description: Include archived vehicles in results
+            sortBy:
+              type: string
+              enum: [make, model, year, licensePlate, currentOdometer, createdAt]
+              default: make
+              description: Field to sort by
+            sortOrder:
+              type: string
+              enum: [asc, desc]
+              default: asc
+              description: Sort order
+
+    UpdateVehicleRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [vehicle.update]
+        data:
+          type: object
+          required:
+            - vehicleId
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Vehicle ID to update
+            make:
+              type: string
+              maxLength: 50
+              nullable: true
+            model:
+              type: string
+              maxLength: 50
+              nullable: true
+            year:
+              type: integer
+              minimum: 1900
+              maximum: 2026
+              nullable: true
+            licensePlate:
+              type: string
+              maxLength: 20
+              nullable: true
+            numberOfSeats:
+              type: integer
+              minimum: 1
+              maximum: 99
+              nullable: true
+            currentOdometer:
+              type: integer
+              minimum: 0
+              description: Must be >= current odometer value
+              nullable: true
+            color:
+              type: string
+              maxLength: 30
+              nullable: true
+            fleetId:
+              type: string
+              format: uuid
+              description: Assign to fleet (null to unassign)
+              nullable: true
+            insuranceExpirationDate:
+              type: string
+              format: date
+              nullable: true
+
+    ArchiveVehicleRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [vehicle.archive]
+        data:
+          type: object
+          required:
+            - vehicleId
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Vehicle ID to archive
+            archivedReason:
+              type: string
+              maxLength: 500
+              description: Reason for archival
+              example: Sold to third party
+              nullable: true
+
+    UpdateOdometerRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [vehicle.updateOdometer]
+        data:
+          type: object
+          required:
+            - vehicleId
+            - odometerReading
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Vehicle ID
+            odometerReading:
+              type: integer
+              minimum: 0
+              description: New odometer reading (must be >= current value)
+
+    Vehicle:
+      type: object
+      required:
+        - id
+        - organizationId
+        - make
+        - model
+        - year
+        - licensePlate
+        - vehicleType
+        - numberOfSeats
+        - currentOdometer
+        - fuelType
+        - archived
+        - createdBy
+        - createdAt
+        - changedBy
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique vehicle identifier
+        organizationId:
+          type: string
+          format: uuid
+          description: Organization this vehicle belongs to
+        fleetId:
+          type: string
+          format: uuid
+          description: Fleet assignment
+          nullable: true
+        make:
+          type: string
+          description: Vehicle manufacturer
+          example: Toyota
+        model:
+          type: string
+          description: Vehicle model
+          example: Camry
+        year:
+          type: integer
+          description: Model year
+          example: 2020
+        licensePlate:
+          type: string
+          description: License plate number
+          example: ABC-123
+        vehicleType:
+          type: string
+          enum: [Sedan, SUV, Truck, Van, Motorcycle, Other]
+          description: Vehicle type
+        numberOfSeats:
+          type: integer
+          description: Passenger capacity
+          example: 5
+        currentOdometer:
+          type: integer
+          description: Current odometer reading
+          example: 50000
+        fuelType:
+          type: string
+          enum: [Gasoline, Diesel, Electric, Hybrid, CNG]
+          description: Fuel type
+        color:
+          type: string
+          description: Vehicle color
+          example: Silver
+          nullable: true
+        vin:
+          type: string
+          description: Vehicle Identification Number
+          example: 1HGBH41JXMN109186
+          nullable: true
+        insuranceExpirationDate:
+          type: string
+          format: date
+          description: Insurance policy expiration date
+          nullable: true
+        archived:
+          type: boolean
+          description: Soft delete flag
+        archivedDate:
+          type: string
+          format: date-time
+          description: Timestamp when vehicle was archived
+          nullable: true
+        archivedReason:
+          type: string
+          description: Reason for archival
+          nullable: true
+        createdBy:
+          type: string
+          format: uuid
+          description: User ID who created this vehicle
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        changedBy:
+          type: string
+          format: uuid
+          description: User ID who last modified this vehicle
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+
+    VehicleResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum:
+            - vehicle.create.success
+            - vehicle.get.success
+            - vehicle.update.success
+            - vehicle.updateOdometer.success
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - vehicle
+          properties:
+            vehicle:
+              $ref: '#/components/schemas/Vehicle'
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    ListVehiclesResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [vehicle.list.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - vehicles
+            - totalCount
+            - activeCount
+            - archivedCount
+          properties:
+            vehicles:
+              type: array
+              items:
+                $ref: '#/components/schemas/Vehicle'
+            totalCount:
+              type: integer
+              description: Total number of vehicles (active + archived)
+            activeCount:
+              type: integer
+              description: Number of active vehicles
+            archivedCount:
+              type: integer
+              description: Number of archived vehicles
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    ArchiveVehicleResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [vehicle.archive.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - vehicleId
+            - archivedDate
+            - cancelledRecurringTasks
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: ID of archived vehicle
+            archivedDate:
+              type: string
+              format: date-time
+              description: Archival timestamp
+            cancelledRecurringTasks:
+              type: integer
+              description: Number of recurring maintenance tasks cancelled
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    AuthToken:
+      type: object
+      required:
+        - value
+        - ttl
+        - username
+      properties:
+        value:
+          type: string
+        ttl:
+          type: integer
+          format: int64
+        username:
+          type: string
+
+    User:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Fleet Manager, Technician]
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+        msgKey:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingFields:
+              value:
+                status: 400
+                msgKey: error.validation.missingFields
+                message: "Missing required fields: make, model, licensePlate"
+                data: {}
+            invalidYear:
+              value:
+                status: 400
+                msgKey: error.validation.invalidYear
+                message: Year must be between 1900 and 2026
+                data: {}
+            invalidVin:
+              value:
+                status: 400
+                msgKey: error.validation.invalidVin
+                message: VIN must be exactly 17 characters
+                data: {}
+            odometerDecreased:
+              value:
+                status: 400
+                msgKey: error.validation.odometerDecreased
+                message: Odometer reading cannot be less than current value (50000 km)
+                data: {}
+
+    UnauthorizedError:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 401
+            msgKey: error.token.expired
+            message: Authentication token has expired
+            data: {}
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            technicianCannotCreate:
+              value:
+                status: 403
+                msgKey: error.forbidden.technicianCreateVehicle
+                message: Technicians cannot create vehicles
+                data: {}
+            technicianCannotUpdate:
+              value:
+                status: 403
+                msgKey: error.forbidden.technicianUpdateVehicle
+                message: Technicians cannot update vehicles
+                data: {}
+            technicianCannotArchive:
+              value:
+                status: 403
+                msgKey: error.forbidden.technicianArchiveVehicle
+                message: Technicians cannot archive vehicles
+                data: {}
+
+    NotFoundError:
+      description: Vehicle not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            vehicleNotFound:
+              value:
+                status: 404
+                msgKey: error.vehicle.notFound
+                message: Vehicle not found
+                data: {}
+            fleetNotFound:
+              value:
+                status: 404
+                msgKey: error.fleet.notFound
+                message: Fleet not found
+                data: {}
+
+    ConflictError:
+      description: Resource conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            licensePlateExists:
+              value:
+                status: 409
+                msgKey: error.vehicle.licensePlateExists
+                message: A vehicle with this license plate already exists in your organization
+                data: {}
+            vinExists:
+              value:
+                status: 409
+                msgKey: error.vehicle.vinExists
+                message: A vehicle with this VIN already exists in your organization
+                data: {}
+            alreadyArchived:
+              value:
+                status: 409
+                msgKey: error.vehicle.alreadyArchived
+                message: Vehicle is already archived
+                data: {}
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 500
+            msgKey: error.internal
+            message: An internal error occurred
+            data: {}
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT token from authentication
+
+security:
+  - BearerAuth: []

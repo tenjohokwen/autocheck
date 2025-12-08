@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "File Management System",
+    "appName": "AutoCheck",
     "loading": "Loading...",
     "save": "Save",
     "cancel": "Cancel",
@@ -17,7 +17,11 @@
     "error": "Error",
     "success": "Success",
     "required": "Required",
-    "optional": "Optional"
+    "optional": "Optional",
+    "create": "Create",
+    "update": "Update",
+    "view": "View",
+    "archive": "Archive"
   },
   "auth": {
     "signup": {
@@ -114,5 +118,97 @@
     "switch": "Switch Language",
     "en": "English",
     "fr": "Français"
+  },
+  "fleet": {
+    "title": "Fleets",
+    "management": {
+      "title": "Fleet Management",
+      "subtitle": "Manage your vehicle fleets"
+    },
+    "create": "Create Fleet",
+    "edit": "Edit Fleet",
+    "vehicles": "vehicles",
+    "form": {
+      "name": "Fleet Name",
+      "description": "Description"
+    },
+    "empty": {
+      "title": "No fleets found",
+      "subtitle": "Create your first fleet to get started"
+    },
+    "success": {
+      "created": "Fleet created successfully",
+      "updated": "Fleet updated successfully",
+      "deleted": "Fleet deleted successfully"
+    },
+    "error": {
+      "fetchFailed": "Failed to load fleets",
+      "saveFailed": "Failed to save fleet",
+      "deleteFailed": "Failed to delete fleet"
+    },
+    "delete": {
+      "title": "Delete Fleet",
+      "confirm": "Are you sure you want to delete the fleet \"{name}\"?",
+      "warning": "All vehicles will be removed from this fleet but not deleted."
+    }
+  },
+  "vehicle": {
+    "title": "Vehicles",
+    "management": {
+      "title": "Vehicle Management",
+      "subtitle": "Manage your fleet vehicles"
+    },
+    "create": "Create Vehicle",
+    "edit": "Edit Vehicle",
+    "archived": "Archived",
+    "seats": "seats",
+    "odometer": "Odometer",
+    "archivedOn": "Archived on",
+    "showArchived": "Show archived",
+    "form": {
+      "make": "Make",
+      "model": "Model",
+      "year": "Year",
+      "seats": "Seats",
+      "licensePlate": "License Plate",
+      "vehicleType": "Vehicle Type",
+      "currentOdometer": "Current Odometer",
+      "insuranceExpiry": "Insurance Expiry"
+    },
+    "types": {
+      "car": "Car",
+      "truck": "Truck",
+      "van": "Van",
+      "suv": "SUV",
+      "motorcycle": "Motorcycle",
+      "bus": "Bus",
+      "other": "Other"
+    },
+    "empty": {
+      "title": "No vehicles found",
+      "subtitle": "Create your first vehicle to get started"
+    },
+    "success": {
+      "created": "Vehicle created successfully",
+      "updated": "Vehicle updated successfully",
+      "archived": "Vehicle archived successfully"
+    },
+    "error": {
+      "fetchFailed": "Failed to load vehicles",
+      "saveFailed": "Failed to save vehicle",
+      "archiveFailed": "Failed to archive vehicle"
+    },
+    "archive": {
+      "title": "Archive Vehicle",
+      "confirm": "Are you sure you want to archive vehicle {vehicle}?",
+      "reason": "Reason for archiving",
+      "warning": "This vehicle will be archived and future maintenance tasks will be cancelled."
+    }
+  },
+  "validation": {
+    "required": "{field} is required",
+    "minLength": "{field} must be at least {length} characters",
+    "min": "{field} must be at least {value}",
+    "max": "{field} must not exceed {value}"
   }
 }

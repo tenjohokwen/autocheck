@@ -1,0 +1,1064 @@
+openapi: 3.0.0
+info:
+  title: AutoCheck Expense Tracking API
+  description: |
+    Vehicle expense tracking, dashboard, and reporting endpoints for AutoCheck.
+
+    All endpoints use POST requests with action-based routing following the GAS backend pattern.
+    Request format: `{ action: "handler.method", data: {...} }`
+
+    **Expense Tracking Features**:
+    - Record and categorize vehicle expenses (fuel, maintenance, insurance, etc.)
+    - View expense dashboard with totals by category and date range
+    - Generate expense reports (on-demand or scheduled)
+    - Track running costs per vehicle
+    - Calculate total cost of ownership
+
+    **Expense Categories**:
+    - fuel: Fuel purchases (auto-generated from fill-ups)
+    - maintenance: Repair and service costs (linked to maintenance tasks)
+    - insurance: Insurance premiums
+    - fines: Traffic tickets, violations
+    - tolls: Road tolls
+    - fees: Registration, licensing fees
+    - financing: Loan payments, lease payments
+    - other: Miscellaneous expenses
+
+    **Role-Based Access**:
+    - Fleet Manager: Full access to all expense features, reports, and financial data
+    - Technician: NO ACCESS to expenses, reports, or financial data
+
+    **Business Rules**:
+    - Fuel expenses auto-created from FillUp records
+    - Maintenance expenses optionally created from MaintenanceTask completion
+    - Expenses for archived vehicles included in historical reports
+    - Dashboard filters by date range, vehicle, fleet, category
+  version: 1.0.0
+  contact:
+    name: AutoCheck API Support
+
+servers:
+  - url: https://script.google.com/macros/s/{deploymentId}/exec
+    description: Google Apps Script deployment endpoint
+
+paths:
+  /:
+    post:
+      summary: Expense tracking endpoint router
+      description: |
+        All expense operations are routed through POST to this endpoint.
+        The `action` field determines which handler method is invoked.
+      operationId: expenseRouter
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CreateExpenseRequest'
+                - $ref: '#/components/schemas/GetExpenseRequest'
+                - $ref: '#/components/schemas/ListExpensesRequest'
+                - $ref: '#/components/schemas/UpdateExpenseRequest'
+                - $ref: '#/components/schemas/DeleteExpenseRequest'
+                - $ref: '#/components/schemas/GetDashboardRequest'
+                - $ref: '#/components/schemas/GenerateReportRequest'
+            examples:
+              createExpense:
+                summary: Record an expense
+                value:
+                  action: expense.create
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    category: insurance
+                    expenseDate: "2025-01-15"
+                    amount: 1200.00
+                    description: Annual insurance premium payment
+                    vendor: State Farm Insurance
+                    receiptNumber: INV-2025-001
+              getExpense:
+                summary: Get expense details
+                value:
+                  action: expense.get
+                  data:
+                    expenseId: exp-550e8400-e29b-41d4-a716-446655440000
+              listExpenses:
+                summary: List expenses with filters
+                value:
+                  action: expense.list
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    category: fuel
+                    dateFrom: "2025-01-01"
+                    dateTo: "2025-12-31"
+                    sortBy: expenseDate
+                    sortOrder: desc
+              getDashboard:
+                summary: Get expense dashboard data
+                value:
+                  action: expense.getDashboard
+                  data:
+                    dateFrom: "2025-01-01"
+                    dateTo: "2025-12-31"
+                    vehicleIds:
+                      - veh-550e8400-e29b-41d4-a716-446655440000
+                    categories:
+                      - fuel
+                      - maintenance
+              generateReport:
+                summary: Generate expense report
+                value:
+                  action: expense.generateReport
+                  data:
+                    reportName: Monthly Expense Report - January 2025
+                    dateFrom: "2025-01-01"
+                    dateTo: "2025-01-31"
+                    format: PDF
+                    vehicleIds:
+                      - veh-550e8400-e29b-41d4-a716-446655440000
+                    categories:
+                      - fuel
+                      - maintenance
+                      - insurance
+                    groupBy: category
+                    includeSummary: true
+                    includeCharts: true
+      responses:
+        '200':
+          description: Successful expense operation
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ExpenseResponse'
+                  - $ref: '#/components/schemas/ListExpensesResponse'
+                  - $ref: '#/components/schemas/DashboardResponse'
+                  - $ref: '#/components/schemas/ReportResponse'
+              examples:
+                createSuccess:
+                  summary: Expense created successfully
+                  value:
+                    status: 200
+                    msgKey: expense.create.success
+                    message: Expense recorded successfully
+                    data:
+                      expense:
+                        id: exp-550e8400-e29b-41d4-a716-446655440000
+                        organizationId: org-550e8400-e29b-41d4-a716-446655440000
+                        vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                        category: insurance
+                        expenseDate: "2025-01-15"
+                        amount: 1200.00
+                        description: Annual insurance premium payment
+                        receiptNumber: INV-2025-001
+                        vendor: State Farm Insurance
+                        maintenanceTaskId: null
+                        fillUpId: null
+                        documentId: null
+                        isRecurring: false
+                        recurrenceIntervalDays: null
+                        notes: null
+                        createdBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        createdAt: "2025-01-15T10:30:00Z"
+                        changedBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        updatedAt: "2025-01-15T10:30:00Z"
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                dashboardSuccess:
+                  summary: Dashboard data retrieved
+                  value:
+                    status: 200
+                    msgKey: expense.getDashboard.success
+                    message: Dashboard data retrieved successfully
+                    data:
+                      summary:
+                        totalExpenses: 15432.50
+                        expenseCount: 145
+                        averagePerVehicle: 1543.25
+                        dateRange:
+                          from: "2025-01-01"
+                          to: "2025-12-31"
+                      categoryBreakdown:
+                        - category: fuel
+                          total: 8500.00
+                          count: 95
+                          percentage: 55.1
+                        - category: maintenance
+                          total: 4200.00
+                          count: 25
+                          percentage: 27.2
+                        - category: insurance
+                          total: 2400.00
+                          count: 12
+                          percentage: 15.6
+                        - category: tolls
+                          total: 332.50
+                          count: 13
+                          percentage: 2.1
+                      vehicleBreakdown:
+                        - vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                          make: Toyota
+                          model: Camry
+                          licensePlate: ABC-123
+                          totalExpenses: 3450.00
+                          fuelCost: 2100.00
+                          maintenanceCost: 1200.00
+                          otherCost: 150.00
+                      monthlyTrend:
+                        - month: "2025-01"
+                          total: 1250.00
+                        - month: "2025-02"
+                          total: 1350.00
+                        - month: "2025-03"
+                          total: 1100.00
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                reportSuccess:
+                  summary: Report generated successfully
+                  value:
+                    status: 200
+                    msgKey: expense.generateReport.success
+                    message: Report generated successfully
+                    data:
+                      reportId: rpt-550e8400-e29b-41d4-a716-446655440000
+                      reportName: Monthly Expense Report - January 2025
+                      format: PDF
+                      fileStoragePath: /reports/2025/01/expense-report-202501.pdf
+                      fileSize: 245678
+                      generatedAt: "2025-01-31T10:30:00Z"
+                      downloadUrl: https://storage.googleapis.com/autocheck/reports/2025/01/expense-report-202501.pdf
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    CreateExpenseRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [expense.create]
+        data:
+          type: object
+          required:
+            - vehicleId
+            - category
+            - expenseDate
+            - amount
+            - description
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Vehicle this expense is for
+            category:
+              type: string
+              enum: [fuel, maintenance, insurance, fines, tolls, fees, financing, other]
+              description: Expense category
+            expenseDate:
+              type: string
+              format: date
+              description: Date expense was incurred (should not be in future)
+            amount:
+              type: number
+              format: double
+              minimum: 0.01
+              description: Expense amount
+              example: 1200.00
+            description:
+              type: string
+              minLength: 1
+              maxLength: 500
+              description: Expense description
+              example: Annual insurance premium payment
+            receiptNumber:
+              type: string
+              maxLength: 100
+              description: Receipt or invoice number
+              nullable: true
+            vendor:
+              type: string
+              maxLength: 200
+              description: Vendor or service provider name
+              nullable: true
+            maintenanceTaskId:
+              type: string
+              format: uuid
+              description: Related maintenance task (if applicable)
+              nullable: true
+            fillUpId:
+              type: string
+              format: uuid
+              description: Related fill-up (if applicable, auto-set for fuel category)
+              nullable: true
+            documentId:
+              type: string
+              format: uuid
+              description: Related receipt document (if uploaded)
+              nullable: true
+            isRecurring:
+              type: boolean
+              default: false
+              description: Whether this is a recurring expense
+            recurrenceIntervalDays:
+              type: integer
+              minimum: 1
+              description: Days between occurrences (required if isRecurring=true)
+              nullable: true
+            notes:
+              type: string
+              maxLength: 1000
+              description: Additional notes
+              nullable: true
+
+    GetExpenseRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [expense.get]
+        data:
+          type: object
+          required:
+            - expenseId
+          properties:
+            expenseId:
+              type: string
+              format: uuid
+
+    ListExpensesRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [expense.list]
+        data:
+          type: object
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Filter by vehicle
+              nullable: true
+            fleetId:
+              type: string
+              format: uuid
+              description: Filter by fleet (all vehicles in fleet)
+              nullable: true
+            category:
+              type: string
+              enum: [fuel, maintenance, insurance, fines, tolls, fees, financing, other]
+              description: Filter by category
+              nullable: true
+            dateFrom:
+              type: string
+              format: date
+              description: Filter by date range start
+              nullable: true
+            dateTo:
+              type: string
+              format: date
+              description: Filter by date range end
+              nullable: true
+            minAmount:
+              type: number
+              format: double
+              description: Filter by minimum amount
+              nullable: true
+            maxAmount:
+              type: number
+              format: double
+              description: Filter by maximum amount
+              nullable: true
+            sortBy:
+              type: string
+              enum: [expenseDate, amount, category, vendor]
+              default: expenseDate
+            sortOrder:
+              type: string
+              enum: [asc, desc]
+              default: desc
+
+    UpdateExpenseRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [expense.update]
+        data:
+          type: object
+          required:
+            - expenseId
+          properties:
+            expenseId:
+              type: string
+              format: uuid
+            category:
+              type: string
+              enum: [fuel, maintenance, insurance, fines, tolls, fees, financing, other]
+              nullable: true
+            expenseDate:
+              type: string
+              format: date
+              nullable: true
+            amount:
+              type: number
+              format: double
+              minimum: 0.01
+              nullable: true
+            description:
+              type: string
+              maxLength: 500
+              nullable: true
+            receiptNumber:
+              type: string
+              maxLength: 100
+              nullable: true
+            vendor:
+              type: string
+              maxLength: 200
+              nullable: true
+            notes:
+              type: string
+              maxLength: 1000
+              nullable: true
+
+    DeleteExpenseRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [expense.delete]
+        data:
+          type: object
+          required:
+            - expenseId
+          properties:
+            expenseId:
+              type: string
+              format: uuid
+
+    GetDashboardRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [expense.getDashboard]
+        data:
+          type: object
+          properties:
+            dateFrom:
+              type: string
+              format: date
+              description: Dashboard date range start
+              nullable: true
+            dateTo:
+              type: string
+              format: date
+              description: Dashboard date range end
+              nullable: true
+            vehicleIds:
+              type: array
+              items:
+                type: string
+                format: uuid
+              description: Filter by specific vehicles
+              nullable: true
+            fleetIds:
+              type: array
+              items:
+                type: string
+                format: uuid
+              description: Filter by fleets
+              nullable: true
+            categories:
+              type: array
+              items:
+                type: string
+                enum: [fuel, maintenance, insurance, fines, tolls, fees, financing, other]
+              description: Filter by categories
+              nullable: true
+
+    GenerateReportRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [expense.generateReport]
+        data:
+          type: object
+          required:
+            - reportName
+            - format
+          properties:
+            reportName:
+              type: string
+              minLength: 1
+              maxLength: 200
+              description: Report name/title
+              example: Monthly Expense Report - January 2025
+            format:
+              type: string
+              enum: [PDF, Excel, CSV]
+              description: Report output format
+            dateFrom:
+              type: string
+              format: date
+              description: Report date range start
+              nullable: true
+            dateTo:
+              type: string
+              format: date
+              description: Report date range end
+              nullable: true
+            vehicleIds:
+              type: array
+              items:
+                type: string
+                format: uuid
+              description: Include specific vehicles
+              nullable: true
+            fleetIds:
+              type: array
+              items:
+                type: string
+                format: uuid
+              description: Include specific fleets
+              nullable: true
+            categories:
+              type: array
+              items:
+                type: string
+                enum: [fuel, maintenance, insurance, fines, tolls, fees, financing, other]
+              description: Include specific categories
+              nullable: true
+            groupBy:
+              type: string
+              enum: [vehicle, fleet, category, month, week]
+              description: Group expenses by field
+              nullable: true
+            sortBy:
+              type: string
+              enum: [date, amount, vehicle, category]
+              default: date
+            sortOrder:
+              type: string
+              enum: [asc, desc]
+              default: desc
+            includeSummary:
+              type: boolean
+              default: true
+              description: Include summary section
+            includeCharts:
+              type: boolean
+              default: true
+              description: Include charts/graphs
+
+    Expense:
+      type: object
+      required:
+        - id
+        - organizationId
+        - vehicleId
+        - category
+        - expenseDate
+        - amount
+        - description
+        - isRecurring
+        - createdBy
+        - createdAt
+        - changedBy
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+        category:
+          type: string
+          enum: [fuel, maintenance, insurance, fines, tolls, fees, financing, other]
+        expenseDate:
+          type: string
+          format: date
+        amount:
+          type: number
+          format: double
+        description:
+          type: string
+        receiptNumber:
+          type: string
+          nullable: true
+        vendor:
+          type: string
+          nullable: true
+        maintenanceTaskId:
+          type: string
+          format: uuid
+          nullable: true
+        fillUpId:
+          type: string
+          format: uuid
+          nullable: true
+        documentId:
+          type: string
+          format: uuid
+          nullable: true
+        isRecurring:
+          type: boolean
+        recurrenceIntervalDays:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        changedBy:
+          type: string
+          format: uuid
+        updatedAt:
+          type: string
+          format: date-time
+
+    ExpenseResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum:
+            - expense.create.success
+            - expense.get.success
+            - expense.update.success
+            - expense.delete.success
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            expense:
+              $ref: '#/components/schemas/Expense'
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    ListExpensesResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [expense.list.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - expenses
+            - totalCount
+            - totalAmount
+          properties:
+            expenses:
+              type: array
+              items:
+                $ref: '#/components/schemas/Expense'
+            totalCount:
+              type: integer
+            totalAmount:
+              type: number
+              format: double
+              description: Sum of all expense amounts
+            averageAmount:
+              type: number
+              format: double
+              description: Average expense amount
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    DashboardResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [expense.getDashboard.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - summary
+            - categoryBreakdown
+          properties:
+            summary:
+              type: object
+              properties:
+                totalExpenses:
+                  type: number
+                  format: double
+                expenseCount:
+                  type: integer
+                averagePerVehicle:
+                  type: number
+                  format: double
+                dateRange:
+                  type: object
+                  properties:
+                    from:
+                      type: string
+                      format: date
+                    to:
+                      type: string
+                      format: date
+            categoryBreakdown:
+              type: array
+              items:
+                type: object
+                properties:
+                  category:
+                    type: string
+                  total:
+                    type: number
+                    format: double
+                  count:
+                    type: integer
+                  percentage:
+                    type: number
+                    format: double
+            vehicleBreakdown:
+              type: array
+              items:
+                type: object
+                properties:
+                  vehicleId:
+                    type: string
+                    format: uuid
+                  make:
+                    type: string
+                  model:
+                    type: string
+                  licensePlate:
+                    type: string
+                  totalExpenses:
+                    type: number
+                    format: double
+                  fuelCost:
+                    type: number
+                    format: double
+                  maintenanceCost:
+                    type: number
+                    format: double
+                  otherCost:
+                    type: number
+                    format: double
+            monthlyTrend:
+              type: array
+              items:
+                type: object
+                properties:
+                  month:
+                    type: string
+                    format: date
+                  total:
+                    type: number
+                    format: double
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    ReportResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [expense.generateReport.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - reportId
+            - reportName
+            - format
+            - generatedAt
+          properties:
+            reportId:
+              type: string
+              format: uuid
+            reportName:
+              type: string
+            format:
+              type: string
+              enum: [PDF, Excel, CSV]
+            fileStoragePath:
+              type: string
+              description: Path to generated report file
+            fileSize:
+              type: integer
+              description: File size in bytes
+            generatedAt:
+              type: string
+              format: date-time
+            downloadUrl:
+              type: string
+              format: uri
+              description: URL to download report
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    AuthToken:
+      type: object
+      required:
+        - value
+        - ttl
+        - username
+      properties:
+        value:
+          type: string
+        ttl:
+          type: integer
+          format: int64
+        username:
+          type: string
+
+    User:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Fleet Manager, Technician]
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+        msgKey:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingFields:
+              value:
+                status: 400
+                msgKey: error.validation.missingFields
+                message: "Missing required fields: vehicleId, category, amount"
+                data: {}
+            invalidAmount:
+              value:
+                status: 400
+                msgKey: error.validation.invalidAmount
+                message: Amount must be greater than 0
+                data: {}
+            futureExpenseDate:
+              value:
+                status: 400
+                msgKey: error.validation.futureExpenseDate
+                message: Expense date cannot be in the future
+                data: {}
+            invalidRecurrence:
+              value:
+                status: 400
+                msgKey: error.validation.invalidRecurrence
+                message: recurrenceIntervalDays must be set when isRecurring is true
+                data: {}
+
+    UnauthorizedError:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 401
+            msgKey: error.token.expired
+            message: Authentication token has expired
+            data: {}
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            technicianNoAccess:
+              value:
+                status: 403
+                msgKey: error.forbidden.technicianExpenseAccess
+                message: Technicians do not have access to expense data
+                data: {}
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            expenseNotFound:
+              value:
+                status: 404
+                msgKey: error.expense.notFound
+                message: Expense not found
+                data: {}
+            vehicleNotFound:
+              value:
+                status: 404
+                msgKey: error.vehicle.notFound
+                message: Vehicle not found
+                data: {}
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 500
+            msgKey: error.internal
+            message: An internal error occurred
+            data: {}
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT token from authentication
+
+security:
+  - BearerAuth: []

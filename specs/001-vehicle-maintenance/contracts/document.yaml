@@ -1,0 +1,848 @@
+openapi: 3.0.0
+info:
+  title: AutoCheck Document Management API
+  description: |
+    Document upload, download, and management endpoints for AutoCheck.
+
+    All endpoints use POST requests with action-based routing following the GAS backend pattern.
+    Request format: `{ action: "handler.method", data: {...} }`
+
+    **Document Management Features**:
+    - Upload vehicle-related documents (insurance, registration, receipts, etc.)
+    - Download and view documents
+    - List documents by vehicle or category
+    - Organize documents by category
+    - Track document expiration dates
+    - Generate reminders for expiring documents
+
+    **Document Categories**:
+    - Insurance: Insurance certificates
+    - Registration: Vehicle registration
+    - Service Receipt: Maintenance receipts
+    - Inspection Report: Safety inspection reports
+    - Manual: Owner's manuals
+    - Photo: Vehicle photos
+    - Other: Other documents
+
+    **Supported File Types**:
+    - Documents: PDF, DOC, DOCX, XLS, XLSX
+    - Images: JPEG, JPG, PNG, GIF, TIFF
+    - Maximum file size: 10MB per document
+
+    **Role-Based Access**:
+    - Fleet Manager: Full CRUD access to all documents
+    - Technician: Can view and upload documents, cannot delete
+
+    **Business Rules**:
+    - File names sanitized to prevent security issues
+    - Unique storage path generated for each document
+    - Original file name preserved for display
+    - Expired documents (insurance, registration) trigger reminders
+    - Document access restricted by organization membership
+  version: 1.0.0
+  contact:
+    name: AutoCheck API Support
+
+servers:
+  - url: https://script.google.com/macros/s/{deploymentId}/exec
+    description: Google Apps Script deployment endpoint
+
+paths:
+  /:
+    post:
+      summary: Document management endpoint router
+      description: |
+        All document operations are routed through POST to this endpoint.
+        The `action` field determines which handler method is invoked.
+      operationId: documentRouter
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/UploadDocumentRequest'
+                - $ref: '#/components/schemas/GetDocumentRequest'
+                - $ref: '#/components/schemas/ListDocumentsRequest'
+                - $ref: '#/components/schemas/UpdateDocumentRequest'
+                - $ref: '#/components/schemas/DeleteDocumentRequest'
+                - $ref: '#/components/schemas/DownloadDocumentRequest'
+            examples:
+              uploadDocument:
+                summary: Upload a document
+                value:
+                  action: document.upload
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    category: Insurance
+                    fileName: insurance-certificate-2025.pdf
+                    fileType: application/pdf
+                    fileSize: 245678
+                    fileDataBase64: JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZw...
+                    description: Annual insurance certificate
+                    expirationDate: "2025-12-31"
+                    tags: insurance,2025,state-farm
+              getDocument:
+                summary: Get document details
+                value:
+                  action: document.get
+                  data:
+                    documentId: doc-550e8400-e29b-41d4-a716-446655440000
+              listDocuments:
+                summary: List documents for a vehicle
+                value:
+                  action: document.list
+                  data:
+                    vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                    category: Insurance
+                    includeExpired: true
+              downloadDocument:
+                summary: Download a document
+                value:
+                  action: document.download
+                  data:
+                    documentId: doc-550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Successful document operation
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/DocumentResponse'
+                  - $ref: '#/components/schemas/ListDocumentsResponse'
+                  - $ref: '#/components/schemas/DownloadDocumentResponse'
+              examples:
+                uploadSuccess:
+                  summary: Document uploaded successfully
+                  value:
+                    status: 200
+                    msgKey: document.upload.success
+                    message: Document uploaded successfully
+                    data:
+                      document:
+                        id: doc-550e8400-e29b-41d4-a716-446655440000
+                        organizationId: org-550e8400-e29b-41d4-a716-446655440000
+                        vehicleId: veh-550e8400-e29b-41d4-a716-446655440000
+                        category: Insurance
+                        fileName: insurance-certificate-2025.pdf
+                        fileType: application/pdf
+                        fileSize: 245678
+                        fileStoragePath: /org-550e8400/vehicles/veh-550e8400/documents/doc-550e8400-insurance-certificate-2025.pdf
+                        description: Annual insurance certificate
+                        tags: insurance,2025,state-farm
+                        expirationDate: "2025-12-31"
+                        documentDate: null
+                        maintenanceTaskId: null
+                        uploadedBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        uploadedAt: "2025-01-15T10:30:00Z"
+                        changedBy: usr-550e8400-e29b-41d4-a716-446655440000
+                        updatedAt: "2025-01-15T10:30:00Z"
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                listSuccess:
+                  summary: Documents listed successfully
+                  value:
+                    status: 200
+                    msgKey: document.list.success
+                    message: Documents retrieved successfully
+                    data:
+                      documents:
+                        - id: doc-550e8400-e29b-41d4-a716-446655440000
+                          category: Insurance
+                          fileName: insurance-certificate-2025.pdf
+                          fileType: application/pdf
+                          fileSize: 245678
+                          description: Annual insurance certificate
+                          expirationDate: "2025-12-31"
+                          uploadedAt: "2025-01-15T10:30:00Z"
+                          isExpired: false
+                        - id: doc-660e8400-e29b-41d4-a716-446655440001
+                          category: Registration
+                          fileName: vehicle-registration-2025.pdf
+                          fileType: application/pdf
+                          fileSize: 189456
+                          description: Vehicle registration document
+                          expirationDate: "2025-06-30"
+                          uploadedAt: "2025-01-10T14:20:00Z"
+                          isExpired: false
+                      totalCount: 2
+                      totalSize: 435134
+                      categoryBreakdown:
+                        - category: Insurance
+                          count: 1
+                        - category: Registration
+                          count: 1
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                downloadSuccess:
+                  summary: Document download URL generated
+                  value:
+                    status: 200
+                    msgKey: document.download.success
+                    message: Download URL generated successfully
+                    data:
+                      documentId: doc-550e8400-e29b-41d4-a716-446655440000
+                      fileName: insurance-certificate-2025.pdf
+                      fileType: application/pdf
+                      fileSize: 245678
+                      downloadUrl: https://storage.googleapis.com/autocheck/documents/doc-550e8400-insurance-certificate-2025.pdf?token=...
+                      expiresAt: "2025-01-15T11:30:00Z"
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '413':
+          $ref: '#/components/responses/FileTooLargeError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    UploadDocumentRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [document.upload]
+        data:
+          type: object
+          required:
+            - vehicleId
+            - category
+            - fileName
+            - fileType
+            - fileSize
+            - fileDataBase64
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Vehicle this document is for
+            category:
+              type: string
+              enum: [Insurance, Registration, Service Receipt, Inspection Report, Manual, Photo, Other]
+              description: Document category
+            fileName:
+              type: string
+              minLength: 1
+              maxLength: 255
+              description: Original file name
+              example: insurance-certificate-2025.pdf
+            fileType:
+              type: string
+              description: MIME type
+              example: application/pdf
+              enum:
+                - application/pdf
+                - application/msword
+                - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+                - application/vnd.ms-excel
+                - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+                - image/jpeg
+                - image/jpg
+                - image/png
+                - image/gif
+                - image/tiff
+            fileSize:
+              type: integer
+              minimum: 1
+              maximum: 10485760
+              description: File size in bytes (max 10MB)
+            fileDataBase64:
+              type: string
+              description: Base64-encoded file content
+            description:
+              type: string
+              maxLength: 500
+              description: Document description
+              nullable: true
+            tags:
+              type: string
+              maxLength: 500
+              description: Comma-separated tags for search
+              example: insurance,2025,state-farm
+              nullable: true
+            expirationDate:
+              type: string
+              format: date
+              description: Document expiration (for insurance, registration)
+              nullable: true
+            documentDate:
+              type: string
+              format: date
+              description: Date on document (e.g., receipt date)
+              nullable: true
+            maintenanceTaskId:
+              type: string
+              format: uuid
+              description: Related maintenance task (if applicable)
+              nullable: true
+
+    GetDocumentRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [document.get]
+        data:
+          type: object
+          required:
+            - documentId
+          properties:
+            documentId:
+              type: string
+              format: uuid
+              description: Document ID to retrieve
+
+    ListDocumentsRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [document.list]
+        data:
+          type: object
+          properties:
+            vehicleId:
+              type: string
+              format: uuid
+              description: Filter by vehicle
+              nullable: true
+            category:
+              type: string
+              enum: [Insurance, Registration, Service Receipt, Inspection Report, Manual, Photo, Other]
+              description: Filter by category
+              nullable: true
+            maintenanceTaskId:
+              type: string
+              format: uuid
+              description: Filter by maintenance task
+              nullable: true
+            tags:
+              type: string
+              description: Search by tags (comma-separated)
+              nullable: true
+            includeExpired:
+              type: boolean
+              default: true
+              description: Include expired documents in results
+            expiringWithinDays:
+              type: integer
+              minimum: 0
+              description: Filter documents expiring within N days
+              nullable: true
+            sortBy:
+              type: string
+              enum: [uploadedAt, expirationDate, fileName, category]
+              default: uploadedAt
+            sortOrder:
+              type: string
+              enum: [asc, desc]
+              default: desc
+
+    UpdateDocumentRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [document.update]
+        data:
+          type: object
+          required:
+            - documentId
+          properties:
+            documentId:
+              type: string
+              format: uuid
+            category:
+              type: string
+              enum: [Insurance, Registration, Service Receipt, Inspection Report, Manual, Photo, Other]
+              nullable: true
+            description:
+              type: string
+              maxLength: 500
+              nullable: true
+            tags:
+              type: string
+              maxLength: 500
+              nullable: true
+            expirationDate:
+              type: string
+              format: date
+              nullable: true
+            documentDate:
+              type: string
+              format: date
+              nullable: true
+
+    DeleteDocumentRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [document.delete]
+        data:
+          type: object
+          required:
+            - documentId
+          properties:
+            documentId:
+              type: string
+              format: uuid
+              description: Document ID to delete (file removed from storage)
+
+    DownloadDocumentRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [document.download]
+        data:
+          type: object
+          required:
+            - documentId
+          properties:
+            documentId:
+              type: string
+              format: uuid
+              description: Document ID to download
+
+    Document:
+      type: object
+      required:
+        - id
+        - organizationId
+        - vehicleId
+        - category
+        - fileName
+        - fileType
+        - fileSize
+        - fileStoragePath
+        - uploadedBy
+        - uploadedAt
+        - changedBy
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique document identifier
+        organizationId:
+          type: string
+          format: uuid
+        vehicleId:
+          type: string
+          format: uuid
+          description: Vehicle this document is for
+        category:
+          type: string
+          enum: [Insurance, Registration, Service Receipt, Inspection Report, Manual, Photo, Other]
+          description: Document category
+        fileName:
+          type: string
+          description: Original file name
+          example: insurance-certificate-2025.pdf
+        fileType:
+          type: string
+          description: MIME type
+          example: application/pdf
+        fileSize:
+          type: integer
+          description: File size in bytes
+        fileStoragePath:
+          type: string
+          description: Path to file in storage system
+        description:
+          type: string
+          description: Document description
+          nullable: true
+        tags:
+          type: string
+          description: Comma-separated tags
+          nullable: true
+        expirationDate:
+          type: string
+          format: date
+          description: Document expiration date
+          nullable: true
+        documentDate:
+          type: string
+          format: date
+          description: Date on document
+          nullable: true
+        maintenanceTaskId:
+          type: string
+          format: uuid
+          description: Related maintenance task
+          nullable: true
+        uploadedBy:
+          type: string
+          format: uuid
+          description: User ID who uploaded this document
+        uploadedAt:
+          type: string
+          format: date-time
+          description: Upload timestamp
+        changedBy:
+          type: string
+          format: uuid
+          description: User ID who last modified this document
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+        isExpired:
+          type: boolean
+          description: Whether document has expired (computed field)
+
+    DocumentResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum:
+            - document.upload.success
+            - document.get.success
+            - document.update.success
+            - document.delete.success
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            document:
+              $ref: '#/components/schemas/Document'
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    ListDocumentsResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [document.list.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - documents
+            - totalCount
+            - totalSize
+          properties:
+            documents:
+              type: array
+              items:
+                $ref: '#/components/schemas/Document'
+            totalCount:
+              type: integer
+              description: Total number of documents
+            totalSize:
+              type: integer
+              description: Total size of all documents (bytes)
+            categoryBreakdown:
+              type: array
+              description: Count by category
+              items:
+                type: object
+                properties:
+                  category:
+                    type: string
+                  count:
+                    type: integer
+            expiringCount:
+              type: integer
+              description: Number of documents expiring within 30 days
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    DownloadDocumentResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+        msgKey:
+          type: string
+          enum: [document.download.success]
+        message:
+          type: string
+        data:
+          type: object
+          required:
+            - documentId
+            - fileName
+            - fileType
+            - fileSize
+            - downloadUrl
+            - expiresAt
+          properties:
+            documentId:
+              type: string
+              format: uuid
+            fileName:
+              type: string
+              description: Original file name
+            fileType:
+              type: string
+              description: MIME type
+            fileSize:
+              type: integer
+              description: File size in bytes
+            downloadUrl:
+              type: string
+              format: uri
+              description: Temporary download URL (expires after 1 hour)
+            expiresAt:
+              type: string
+              format: date-time
+              description: When download URL expires
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    AuthToken:
+      type: object
+      required:
+        - value
+        - ttl
+        - username
+      properties:
+        value:
+          type: string
+        ttl:
+          type: integer
+          format: int64
+        username:
+          type: string
+
+    User:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Fleet Manager, Technician]
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+        msgKey:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingFields:
+              value:
+                status: 400
+                msgKey: error.validation.missingFields
+                message: "Missing required fields: vehicleId, category, fileName"
+                data: {}
+            unsupportedFileType:
+              value:
+                status: 400
+                msgKey: error.validation.unsupportedFileType
+                message: File type not supported. Allowed types are PDF, JPEG, PNG, DOC, DOCX, XLS, XLSX
+                data: {}
+            invalidFileName:
+              value:
+                status: 400
+                msgKey: error.validation.invalidFileName
+                message: File name contains invalid characters
+                data: {}
+
+    UnauthorizedError:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 401
+            msgKey: error.token.expired
+            message: Authentication token has expired
+            data: {}
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            technicianCannotDelete:
+              value:
+                status: 403
+                msgKey: error.forbidden.technicianDeleteDocument
+                message: Technicians cannot delete documents
+                data: {}
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            documentNotFound:
+              value:
+                status: 404
+                msgKey: error.document.notFound
+                message: Document not found
+                data: {}
+            vehicleNotFound:
+              value:
+                status: 404
+                msgKey: error.vehicle.notFound
+                message: Vehicle not found
+                data: {}
+
+    FileTooLargeError:
+      description: File exceeds maximum size
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 413
+            msgKey: error.validation.fileTooLarge
+            message: File size exceeds maximum allowed size of 10MB
+            data: {}
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            uploadFailed:
+              value:
+                status: 500
+                msgKey: error.internal.uploadFailed
+                message: Failed to upload document to storage
+                data: {}
+            general:
+              value:
+                status: 500
+                msgKey: error.internal
+                message: An internal error occurred
+                data: {}
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: JWT token from authentication
+
+security:
+  - BearerAuth: []

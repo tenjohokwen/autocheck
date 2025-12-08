@@ -1,0 +1,632 @@
+openapi: 3.0.0
+info:
+  title: AutoCheck Authentication API
+  description: |
+    Authentication endpoints for the AutoCheck Vehicle Maintenance Management System.
+
+    All endpoints use POST requests with action-based routing following the GAS backend pattern.
+    Request format: `{ action: "handler.method", data: {...} }`
+
+    **Authentication Flow**:
+    1. User signs up with email/password (auth.signup)
+    2. User logs in with credentials (auth.login)
+    3. Token is returned and stored client-side
+    4. Token is sent in Authorization header for subsequent requests
+    5. Token is automatically refreshed on each authenticated request
+    6. User can reset password via email (auth.requestPasswordReset, auth.resetPassword)
+    7. User logs out (auth.logout) to invalidate token
+  version: 1.0.0
+  contact:
+    name: AutoCheck API Support
+
+servers:
+  - url: https://script.google.com/macros/s/{deploymentId}/exec
+    description: Google Apps Script deployment endpoint
+
+paths:
+  /:
+    post:
+      summary: Authentication endpoint router
+      description: |
+        All authentication operations are routed through POST to this endpoint.
+        The `action` field determines which handler method is invoked.
+      operationId: authRouter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/SignupRequest'
+                - $ref: '#/components/schemas/LoginRequest'
+                - $ref: '#/components/schemas/LogoutRequest'
+                - $ref: '#/components/schemas/RequestPasswordResetRequest'
+                - $ref: '#/components/schemas/ResetPasswordRequest'
+                - $ref: '#/components/schemas/ValidateTokenRequest'
+            examples:
+              signup:
+                summary: User signup
+                value:
+                  action: auth.signup
+                  data:
+                    username: johndoe
+                    email: john.doe@example.com
+                    password: SecurePass123!
+                    organizationId: org-550e8400-e29b-41d4-a716-446655440000
+                    role: Fleet Manager
+              login:
+                summary: User login
+                value:
+                  action: auth.login
+                  data:
+                    email: john.doe@example.com
+                    password: SecurePass123!
+              logout:
+                summary: User logout
+                value:
+                  action: auth.logout
+                  data: {}
+              requestPasswordReset:
+                summary: Request password reset
+                value:
+                  action: auth.requestPasswordReset
+                  data:
+                    email: john.doe@example.com
+              resetPassword:
+                summary: Reset password with code
+                value:
+                  action: auth.resetPassword
+                  data:
+                    email: john.doe@example.com
+                    resetCode: "123456"
+                    newPassword: NewSecurePass123!
+      responses:
+        '200':
+          description: Successful authentication operation
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SignupResponse'
+                  - $ref: '#/components/schemas/LoginResponse'
+                  - $ref: '#/components/schemas/LogoutResponse'
+                  - $ref: '#/components/schemas/PasswordResetResponse'
+              examples:
+                signupSuccess:
+                  summary: Successful signup
+                  value:
+                    status: 200
+                    msgKey: auth.signup.success
+                    message: Account created successfully
+                    data:
+                      userId: usr-550e8400-e29b-41d4-a716-446655440000
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                      organizationId: org-550e8400-e29b-41d4-a716-446655440000
+                      isActive: true
+                      createdAt: "2025-01-15T10:30:00Z"
+                loginSuccess:
+                  summary: Successful login
+                  value:
+                    status: 200
+                    msgKey: auth.login.success
+                    message: Login successful
+                    data: {}
+                    token:
+                      value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      ttl: 1705425600000
+                      username: john.doe@example.com
+                    user:
+                      id: usr-550e8400-e29b-41d4-a716-446655440000
+                      username: johndoe
+                      email: john.doe@example.com
+                      role: Fleet Manager
+                      organizationId: org-550e8400-e29b-41d4-a716-446655440000
+                      isActive: true
+                      lastLoginAt: "2025-01-15T14:20:00Z"
+                logoutSuccess:
+                  summary: Successful logout
+                  value:
+                    status: 200
+                    msgKey: auth.logout.success
+                    message: Logged out successfully
+                    data: {}
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    SignupRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [auth.signup]
+          description: Action identifier for signup
+        data:
+          type: object
+          required:
+            - username
+            - email
+            - password
+            - organizationId
+          properties:
+            username:
+              type: string
+              minLength: 3
+              maxLength: 50
+              description: Display name for the user
+              example: johndoe
+            email:
+              type: string
+              format: email
+              pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+              description: Email address for authentication
+              example: john.doe@example.com
+            password:
+              type: string
+              minLength: 8
+              pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$'
+              description: |
+                Password meeting security requirements:
+                - Minimum 8 characters
+                - At least one uppercase letter
+                - At least one lowercase letter
+                - At least one number
+              example: SecurePass123!
+            organizationId:
+              type: string
+              format: uuid
+              description: Organization this user belongs to
+              example: org-550e8400-e29b-41d4-a716-446655440000
+            role:
+              type: string
+              enum:
+                - Fleet Manager
+                - Technician
+              default: Technician
+              description: |
+                User role determining access permissions:
+                - Fleet Manager: Full access to all features
+                - Technician: Limited access (update assigned tasks, add parts)
+
+    LoginRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [auth.login]
+          description: Action identifier for login
+        data:
+          type: object
+          required:
+            - email
+            - password
+          properties:
+            email:
+              type: string
+              format: email
+              description: Email address
+              example: john.doe@example.com
+            password:
+              type: string
+              description: User password
+              example: SecurePass123!
+
+    LogoutRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [auth.logout]
+          description: Action identifier for logout
+        data:
+          type: object
+          description: No data required for logout (uses token from Authorization header)
+
+    RequestPasswordResetRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [auth.requestPasswordReset]
+          description: Action identifier for password reset request
+        data:
+          type: object
+          required:
+            - email
+          properties:
+            email:
+              type: string
+              format: email
+              description: Email address to send reset code to
+              example: john.doe@example.com
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [auth.resetPassword]
+          description: Action identifier for password reset
+        data:
+          type: object
+          required:
+            - email
+            - resetCode
+            - newPassword
+          properties:
+            email:
+              type: string
+              format: email
+              description: Email address
+              example: john.doe@example.com
+            resetCode:
+              type: string
+              pattern: '^\d{6}$'
+              description: 6-digit reset code sent via email
+              example: "123456"
+            newPassword:
+              type: string
+              minLength: 8
+              pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$'
+              description: |
+                New password meeting security requirements:
+                - Minimum 8 characters
+                - At least one uppercase letter
+                - At least one lowercase letter
+                - At least one number
+              example: NewSecurePass123!
+
+    ValidateTokenRequest:
+      type: object
+      required:
+        - action
+        - data
+      properties:
+        action:
+          type: string
+          enum: [auth.validateToken]
+          description: Action identifier for token validation
+        data:
+          type: object
+          description: No data required (uses token from Authorization header)
+
+    SignupResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+          description: HTTP status code
+        msgKey:
+          type: string
+          enum: [auth.signup.success]
+          description: Internationalization message key
+        message:
+          type: string
+          description: Human-readable success message
+        data:
+          type: object
+          properties:
+            userId:
+              type: string
+              format: uuid
+              description: Newly created user ID
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    LoginResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+        - token
+        - user
+      properties:
+        status:
+          type: integer
+          enum: [200]
+          description: HTTP status code
+        msgKey:
+          type: string
+          enum: [auth.login.success]
+          description: Internationalization message key
+        message:
+          type: string
+          description: Human-readable success message
+        data:
+          type: object
+          description: Empty object for login response
+        token:
+          $ref: '#/components/schemas/AuthToken'
+        user:
+          $ref: '#/components/schemas/User'
+
+    LogoutResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+          enum: [200]
+          description: HTTP status code
+        msgKey:
+          type: string
+          enum: [auth.logout.success]
+          description: Internationalization message key
+        message:
+          type: string
+          description: Human-readable success message
+        data:
+          type: object
+          description: Empty object for logout response
+
+    PasswordResetResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+          enum: [200]
+          description: HTTP status code
+        msgKey:
+          type: string
+          enum:
+            - auth.requestPasswordReset.success
+            - auth.resetPassword.success
+          description: Internationalization message key
+        message:
+          type: string
+          description: Human-readable success message
+        data:
+          type: object
+          description: Empty object for password reset response
+
+    AuthToken:
+      type: object
+      required:
+        - value
+        - ttl
+        - username
+      properties:
+        value:
+          type: string
+          description: JWT token or session token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        ttl:
+          type: integer
+          format: int64
+          description: Token expiration timestamp (Unix milliseconds)
+          example: 1705425600000
+        username:
+          type: string
+          description: Username/email associated with token
+          example: john.doe@example.com
+
+    User:
+      type: object
+      required:
+        - id
+        - organizationId
+        - username
+        - email
+        - role
+        - isActive
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+          example: usr-550e8400-e29b-41d4-a716-446655440000
+        organizationId:
+          type: string
+          format: uuid
+          description: Organization this user belongs to
+          example: org-550e8400-e29b-41d4-a716-446655440000
+        username:
+          type: string
+          description: Display name
+          example: johndoe
+        email:
+          type: string
+          format: email
+          description: Email address
+          example: john.doe@example.com
+        role:
+          type: string
+          enum:
+            - Fleet Manager
+            - Technician
+          description: User role
+        isActive:
+          type: boolean
+          description: Account active status
+        createdAt:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        lastLoginAt:
+          type: string
+          format: date-time
+          description: Last successful login timestamp
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - msgKey
+        - message
+        - data
+      properties:
+        status:
+          type: integer
+          description: HTTP error status code
+          example: 400
+        msgKey:
+          type: string
+          description: Internationalization error message key
+          example: error.validation.missingFields
+        message:
+          type: string
+          description: Human-readable error message
+          example: Missing required fields
+        data:
+          type: object
+          description: Empty object for error responses
+
+  responses:
+    ValidationError:
+      description: Validation error (missing or invalid fields)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missingFields:
+              summary: Missing required fields
+              value:
+                status: 400
+                msgKey: error.validation.missingFields
+                message: "Missing required fields: email, password"
+                data: {}
+            invalidEmail:
+              summary: Invalid email format
+              value:
+                status: 400
+                msgKey: error.validation.invalidEmail
+                message: Email format is invalid
+                data: {}
+            weakPassword:
+              summary: Password does not meet requirements
+              value:
+                status: 400
+                msgKey: error.validation.weakPassword
+                message: Password must be at least 8 characters with uppercase, lowercase, and number
+                data: {}
+
+    UnauthorizedError:
+      description: Authentication failed (invalid credentials or expired token)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalidCredentials:
+              summary: Invalid email or password
+              value:
+                status: 401
+                msgKey: error.auth.invalidCredentials
+                message: Invalid email or password
+                data: {}
+            expiredToken:
+              summary: Token has expired
+              value:
+                status: 401
+                msgKey: error.token.expired
+                message: Authentication token has expired
+                data: {}
+            invalidToken:
+              summary: Token is invalid
+              value:
+                status: 401
+                msgKey: error.token.invalid
+                message: Authentication token is invalid
+                data: {}
+
+    ConflictError:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            emailExists:
+              summary: Email already registered
+              value:
+                status: 409
+                msgKey: error.user.alreadyExists
+                message: An account with this email already exists
+                data: {}
+            usernameExists:
+              summary: Username already taken
+              value:
+                status: 409
+                msgKey: error.user.usernameTaken
+                message: Username is already taken
+                data: {}
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 500
+            msgKey: error.internal
+            message: An internal error occurred
+            data: {}
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        JWT token obtained from login/signup.
+        Include in Authorization header as: `Bearer <token>`
+
+security: []  # Public endpoints (login/signup) require no auth

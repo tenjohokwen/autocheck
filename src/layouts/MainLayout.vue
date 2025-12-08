@@ -74,38 +74,150 @@
       bordered
       class="bg-grey-1"
     >
-      <q-list>
-        <q-item-label header class="text-grey-8">
-          {{ $t('navigation.home') }}
-        </q-item-label>
+      <q-scroll-area class="fit">
+        <q-list>
+          <!-- Dashboard Section -->
+          <q-item-label header class="text-grey-8">
+            {{ $t('navigation.overview') }}
+          </q-item-label>
 
-        <q-item
-          clickable
-          :to="{ name: 'dashboard' }"
-          exact
-        >
-          <q-item-section avatar>
-            <q-icon name="dashboard" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Dashboard</q-item-label>
-          </q-item-section>
-        </q-item>
+          <q-item clickable :to="{ name: 'profile' }" exact>
+            <q-item-section avatar>
+              <q-icon name="dashboard" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ $t('navigation.dashboard') }}</q-item-label>
+            </q-item-section>
+          </q-item>
 
-        <q-item
-          clickable
-          :to="{ name: 'search' }"
-        >
-          <q-item-section avatar>
-            <q-icon name="search" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>{{ $t('navigation.search') }}</q-item-label>
-          </q-item-section>
-        </q-item>
+          <!-- Fleet Management Section -->
+          <q-item-label header class="text-grey-8 q-mt-md">
+            {{ $t('navigation.fleetManagement') }}
+          </q-item-label>
 
-        <!-- Admin only section removed - no admin-specific navigation items remain -->
-      </q-list>
+          <q-item clickable :to="{ name: 'fleets' }">
+            <q-item-section avatar>
+              <q-icon name="business" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ $t('navigation.fleets') }}</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable :to="{ name: 'vehicles' }">
+            <q-item-section avatar>
+              <q-icon name="directions_car" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ $t('navigation.vehicles') }}</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <!-- Operations Section -->
+          <q-item-label header class="text-grey-8 q-mt-md">
+            {{ $t('navigation.operations') }}
+          </q-item-label>
+
+          <q-item clickable :to="{ name: 'maintenance' }">
+            <q-item-section avatar>
+              <q-icon name="build" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ $t('navigation.maintenance') }}</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable :to="{ name: 'fuel' }">
+            <q-item-section avatar>
+              <q-icon name="local_gas_station" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ $t('navigation.fuel') }}</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable :to="{ name: 'repairs' }">
+            <q-item-section avatar>
+              <q-icon name="handyman" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ $t('navigation.repairs') }}</q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <q-item clickable :to="{ name: 'reminders' }">
+            <q-item-section avatar>
+              <q-icon name="notifications" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ $t('navigation.reminders') }}</q-item-label>
+            </q-item-section>
+            <q-badge
+              v-if="reminderStore.activeCount > 0"
+              color="orange"
+              floating
+              :label="reminderStore.activeCount"
+            />
+          </q-item>
+
+          <!-- Inventory & Documents Section -->
+          <q-item-label header class="text-grey-8 q-mt-md">
+            {{ $t('navigation.resources') }}
+          </q-item-label>
+
+          <q-item clickable :to="{ name: 'parts' }">
+            <q-item-section avatar>
+              <q-icon name="inventory" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ $t('navigation.parts') }}</q-item-label>
+            </q-item-section>
+            <q-badge
+              v-if="partsStore.lowStockCount > 0"
+              color="orange"
+              floating
+              :label="partsStore.lowStockCount"
+            />
+          </q-item>
+
+          <q-item clickable :to="{ name: 'documents' }">
+            <q-item-section avatar>
+              <q-icon name="description" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ $t('navigation.documents') }}</q-item-label>
+            </q-item-section>
+            <q-badge
+              v-if="documentStore.expiredCount > 0"
+              color="red"
+              floating
+              :label="documentStore.expiredCount"
+            />
+          </q-item>
+
+          <!-- Financial Section (Fleet Manager Only) -->
+          <q-item-label
+            v-if="authStore.user?.role === 'FLEET_MANAGER'"
+            header
+            class="text-grey-8 q-mt-md"
+          >
+            {{ $t('navigation.financial') }}
+          </q-item-label>
+
+          <q-item
+            v-if="authStore.user?.role === 'FLEET_MANAGER'"
+            clickable
+            :to="{ name: 'expenses' }"
+          >
+            <q-item-section avatar>
+              <q-icon name="receipt_long" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label>{{ $t('navigation.expenses') }}</q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+      </q-scroll-area>
     </q-drawer>
 
     <!-- Page content -->
@@ -148,6 +260,9 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from 'src/stores/authStore'
+import { useReminderStore } from 'src/stores/reminderStore'
+import { usePartsStore } from 'src/stores/partsStore'
+import { useDocumentStore } from 'src/stores/documentStore'
 import { useI18n } from 'vue-i18n'
 import { useRoleAccess } from 'src/composables/useRoleAccess'
 import { useSessionMonitor } from 'src/composables/useSessionMonitor'
@@ -157,6 +272,9 @@ import SessionExpirationDialog from 'src/components/auth/SessionExpirationDialog
 
 const router = useRouter()
 const authStore = useAuthStore()
+const reminderStore = useReminderStore()
+const partsStore = usePartsStore()
+const documentStore = useDocumentStore()
 const { t: $t } = useI18n()
 const { isViewOnly } = useRoleAccess()
 const { notifySuccess, notifyError } = useNotifications()

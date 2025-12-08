@@ -1,8 +1,8 @@
 {
-  "name": "messageline",
+  "name": "autocheck",
   "version": "0.0.1",
-  "description": "messaging app",
-  "productName": "messageline",
+  "description": "Vehicle maintenance management system",
+  "productName": "AutoCheck",
   "author": "mokwen <mokwen@groupon.com>",
   "type": "module",
   "private": true,
@@ -33,7 +33,7 @@
     "vue-eslint-parser": "^10.2.0",
     "@vue/eslint-config-prettier": "^10.1.0",
     "prettier": "^3.3.3",
-    "@quasar/app-vite": "^2.1.0",
+    "@quasar/app-vite": "^2.4.0",
     "autoprefixer": "^10.4.2",
     "postcss": "^8.4.14"
   },
