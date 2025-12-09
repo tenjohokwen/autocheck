@@ -11,7 +11,7 @@ const DocumentHandler = {
    * POST document.create
    */
   createDocument: function (context) {
-    const data = context.payload
+    const data = context.data
     const document = DocumentService.createDocument(data, context.user.email)
 
     return {
@@ -27,7 +27,7 @@ const DocumentHandler = {
    * POST document.getAll
    */
   getAllDocuments: function (context) {
-    const filters = context.payload || {}
+    const filters = context.data || {}
     const documents = DocumentService.getAllDocuments(filters)
 
     return {
@@ -43,7 +43,7 @@ const DocumentHandler = {
    * POST document.getById
    */
   getDocumentById: function (context) {
-    const documentId = context.payload.documentId
+    const documentId = context.data.documentId
 
     if (!documentId) {
       throw new Error('documentId is required')
@@ -73,8 +73,8 @@ const DocumentHandler = {
    * POST document.update
    */
   updateDocument: function (context) {
-    const documentId = context.payload.documentId
-    const updates = context.payload
+    const documentId = context.data.documentId
+    const updates = context.data
 
     if (!documentId) {
       throw new Error('documentId is required')
@@ -95,7 +95,7 @@ const DocumentHandler = {
    * POST document.delete
    */
   deleteDocument: function (context) {
-    const documentId = context.payload.documentId
+    const documentId = context.data.documentId
 
     if (!documentId) {
       throw new Error('documentId is required')
@@ -116,7 +116,7 @@ const DocumentHandler = {
    * POST document.byVehicle
    */
   getDocumentsByVehicle: function (context) {
-    const vehicleId = context.payload.vehicleId
+    const vehicleId = context.data.vehicleId
 
     if (!vehicleId) {
       throw new Error('vehicleId is required')
@@ -137,7 +137,7 @@ const DocumentHandler = {
    * POST document.expiring
    */
   getExpiringDocuments: function (context) {
-    const days = context.payload.days || 30
+    const days = context.data.days || 30
     const documents = DocumentService.getExpiringDocuments(days)
 
     return {
@@ -168,7 +168,7 @@ const DocumentHandler = {
    * POST document.search
    */
   searchDocuments: function (context) {
-    const query = context.payload.query
+    const query = context.data.query
 
     if (!query) {
       throw new Error('query is required')
@@ -184,3 +184,14 @@ const DocumentHandler = {
     }
   },
 }
+
+// Method aliases for Router compatibility
+DocumentHandler.create = DocumentHandler.createDocument
+DocumentHandler.getAll = DocumentHandler.getAllDocuments
+DocumentHandler.getById = DocumentHandler.getDocumentById
+DocumentHandler.update = DocumentHandler.updateDocument
+DocumentHandler.delete = DocumentHandler.deleteDocument
+DocumentHandler.byVehicle = DocumentHandler.getDocumentsByVehicle
+DocumentHandler.expiring = DocumentHandler.getExpiringDocuments
+DocumentHandler.expired = DocumentHandler.getExpiredDocuments
+DocumentHandler.search = DocumentHandler.searchDocuments

@@ -257,3 +257,13 @@ const ExpenseHandler = {
     }
   },
 }
+
+// Method aliases for Router compatibility
+ExpenseHandler.create = ExpenseHandler.createExpense
+ExpenseHandler.list = ExpenseHandler.listExpenses
+ExpenseHandler.get = ExpenseHandler.getExpense
+ExpenseHandler.update = ExpenseHandler.updateExpense
+ExpenseHandler.delete = ExpenseHandler.deleteExpense
+ExpenseHandler.dashboard = ExpenseHandler.getExpenseDashboard
+ExpenseHandler.runningCosts = ExpenseHandler.getRunningCosts
+ExpenseHandler.report = ExpenseHandler.generateExpenseReport

@@ -14,7 +14,7 @@ const PartsHandler = {
   createPart: function (context) {
     RoleValidator.requireFleetManager(context.user)
 
-    const data = context.payload
+    const data = context.data
     const part = PartsService.createPart(data, context.user.email)
 
     return {
@@ -30,7 +30,7 @@ const PartsHandler = {
    * POST parts.getAll
    */
   getAllParts: function (context) {
-    const filters = context.payload || {}
+    const filters = context.data || {}
     const parts = PartsService.getAllParts(filters)
 
     return {
@@ -46,7 +46,7 @@ const PartsHandler = {
    * POST parts.getById
    */
   getPartById: function (context) {
-    const partId = context.payload.partId
+    const partId = context.data.partId
 
     if (!partId) {
       throw new Error('partId is required')
@@ -79,8 +79,8 @@ const PartsHandler = {
   updatePart: function (context) {
     RoleValidator.requireFleetManager(context.user)
 
-    const partId = context.payload.partId
-    const updates = context.payload
+    const partId = context.data.partId
+    const updates = context.data
 
     if (!partId) {
       throw new Error('partId is required')
@@ -104,7 +104,7 @@ const PartsHandler = {
   deletePart: function (context) {
     RoleValidator.requireFleetManager(context.user)
 
-    const partId = context.payload.partId
+    const partId = context.data.partId
 
     if (!partId) {
       throw new Error('partId is required')
@@ -125,9 +125,9 @@ const PartsHandler = {
    * POST parts.adjustQuantity
    */
   adjustQuantity: function (context) {
-    const partId = context.payload.partId
-    const quantity = context.payload.quantity
-    const reason = context.payload.reason || 'Manual adjustment'
+    const partId = context.data.partId
+    const quantity = context.data.quantity
+    const reason = context.data.reason || 'Manual adjustment'
 
     if (!partId) {
       throw new Error('partId is required')
@@ -187,7 +187,7 @@ const PartsHandler = {
    * POST parts.search
    */
   searchParts: function (context) {
-    const query = context.payload.query
+    const query = context.data.query
 
     if (!query) {
       throw new Error('query is required')
@@ -203,3 +203,14 @@ const PartsHandler = {
     }
   },
 }
+
+// Method aliases for Router compatibility
+PartsHandler.create = PartsHandler.createPart
+PartsHandler.getAll = PartsHandler.getAllParts
+PartsHandler.getById = PartsHandler.getPartById
+PartsHandler.update = PartsHandler.updatePart
+PartsHandler.delete = PartsHandler.deletePart
+PartsHandler.adjustQuantity = PartsHandler.adjustQuantity
+PartsHandler.lowStock = PartsHandler.getLowStockParts
+PartsHandler.summary = PartsHandler.getInventorySummary
+PartsHandler.search = PartsHandler.searchParts

@@ -11,7 +11,7 @@ const RepairHandler = {
    * POST repair.create
    */
   createRepair: function (context) {
-    const data = context.payload
+    const data = context.data
     const repair = RepairService.createRepair(data, context.user.email)
 
     return {
@@ -27,7 +27,7 @@ const RepairHandler = {
    * POST repair.getAll
    */
   getAllRepairs: function (context) {
-    const filters = context.payload || {}
+    const filters = context.data || {}
     const repairs = RepairService.getAllRepairs(filters)
 
     return {
@@ -43,7 +43,7 @@ const RepairHandler = {
    * POST repair.getById
    */
   getRepairById: function (context) {
-    const repairId = context.payload.repairId
+    const repairId = context.data.repairId
 
     if (!repairId) {
       throw new Error('repairId is required')
@@ -73,8 +73,8 @@ const RepairHandler = {
    * POST repair.update
    */
   updateRepair: function (context) {
-    const repairId = context.payload.repairId
-    const updates = context.payload
+    const repairId = context.data.repairId
+    const updates = context.data
 
     if (!repairId) {
       throw new Error('repairId is required')
@@ -95,7 +95,7 @@ const RepairHandler = {
    * POST repair.delete
    */
   deleteRepair: function (context) {
-    const repairId = context.payload.repairId
+    const repairId = context.data.repairId
 
     if (!repairId) {
       throw new Error('repairId is required')
@@ -116,7 +116,7 @@ const RepairHandler = {
    * POST repair.history
    */
   getRepairHistory: function (context) {
-    const vehicleId = context.payload.vehicleId
+    const vehicleId = context.data.vehicleId
 
     if (!vehicleId) {
       throw new Error('vehicleId is required')
@@ -137,7 +137,7 @@ const RepairHandler = {
    * POST repair.costAnalysis
    */
   getRepairCostAnalysis: function (context) {
-    const filters = context.payload || {}
+    const filters = context.data || {}
     const analysis = RepairService.getRepairCostAnalysis(filters)
 
     return {
@@ -153,7 +153,7 @@ const RepairHandler = {
    * POST repair.warranty
    */
   getWarrantyRepairs: function (context) {
-    const vehicleId = context.payload.vehicleId || null
+    const vehicleId = context.data.vehicleId || null
     const repairs = RepairService.getWarrantyRepairs(vehicleId)
 
     return {
@@ -164,3 +164,13 @@ const RepairHandler = {
     }
   },
 }
+
+// Method aliases for Router compatibility
+RepairHandler.create = RepairHandler.createRepair
+RepairHandler.getAll = RepairHandler.getAllRepairs
+RepairHandler.getById = RepairHandler.getRepairById
+RepairHandler.update = RepairHandler.updateRepair
+RepairHandler.delete = RepairHandler.deleteRepair
+RepairHandler.history = RepairHandler.getRepairHistory
+RepairHandler.costAnalysis = RepairHandler.getRepairCostAnalysis
+RepairHandler.warranty = RepairHandler.getWarrantyRepairs
