@@ -144,6 +144,7 @@ import { computed } from 'vue'
 import { useAuthStore } from 'src/stores/authStore'
 import { date } from 'quasar'
 
+// eslint-disable-next-line no-unused-vars
 const props = defineProps({
   reminder: {
     type: Object,

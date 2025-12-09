@@ -228,3 +228,12 @@ const MaintenanceHandler = {
     }
   },
 }
+
+// Method aliases for router compatibility
+MaintenanceHandler.create = MaintenanceHandler.createMaintenanceTask
+MaintenanceHandler.list = MaintenanceHandler.listMaintenanceTasks
+MaintenanceHandler.get = MaintenanceHandler.getMaintenanceTask
+MaintenanceHandler.update = MaintenanceHandler.updateMaintenanceTask
+MaintenanceHandler.delete = MaintenanceHandler.deleteMaintenanceTask
+MaintenanceHandler.assignTechnician = MaintenanceHandler.assignTechnicianToTask
+MaintenanceHandler.upcoming = MaintenanceHandler.getUpcomingTasks

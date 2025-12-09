@@ -208,3 +208,12 @@ const FuelHandler = {
     }
   },
 }
+
+// Method aliases for router compatibility
+FuelHandler.create = FuelHandler.createFuelRecord
+FuelHandler.list = FuelHandler.listFuelRecords
+FuelHandler.get = FuelHandler.getFuelRecord
+FuelHandler.update = FuelHandler.updateFuelRecord
+FuelHandler.delete = FuelHandler.deleteFuelRecord
+FuelHandler.efficiency = FuelHandler.calculateFuelEfficiency
+FuelHandler.statistics = FuelHandler.getFuelStatistics

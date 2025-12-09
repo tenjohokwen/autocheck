@@ -194,3 +194,11 @@ const FleetHandler = {
     }
   },
 }
+
+// Method aliases for router compatibility
+FleetHandler.create = FleetHandler.createFleet
+FleetHandler.list = FleetHandler.listFleets
+FleetHandler.get = FleetHandler.getFleet
+FleetHandler.update = FleetHandler.updateFleet
+FleetHandler.delete = FleetHandler.deleteFleet
+FleetHandler.getVehicles = FleetHandler.getVehicles  // Already matches

@@ -261,3 +261,13 @@ const VehicleHandler = {
     }
   },
 }
+
+// Method aliases for router compatibility
+VehicleHandler.create = VehicleHandler.createVehicle
+VehicleHandler.list = VehicleHandler.listVehicles
+VehicleHandler.get = VehicleHandler.getVehicle
+VehicleHandler.update = VehicleHandler.updateVehicle
+VehicleHandler.archive = VehicleHandler.archiveVehicle
+VehicleHandler.delete = VehicleHandler.deleteVehicle
+VehicleHandler.assignToFleet = VehicleHandler.assignVehicleToFleet
+VehicleHandler.removeFromFleet = VehicleHandler.removeVehicleFromFleet

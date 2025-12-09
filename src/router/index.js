@@ -66,8 +66,8 @@ export default defineRouter(function (/* { store, ssrContext } */) {
 
     // Check if route should be hidden for authenticated users
     if (to.meta.hideForAuth && authStore.isAuthenticated) {
-      // Already authenticated, redirect to home
-      next({ name: 'home' })
+      // Already authenticated, redirect to dashboard
+      next('/app')
       return
     }
 

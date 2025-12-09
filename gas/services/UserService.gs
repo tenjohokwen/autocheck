@@ -4,11 +4,10 @@
  * Provides database operations for user management.
  * Interacts with the 'users' sheet in Google Sheets.
  *
- * Schema:
- * A: email, B: password, C: salt, D: role, E: status,
- * F: verificationToken, G: verificationTokenExpiry,
- * H: passwordResetOTP, I: otpExpiry,
- * J: createdAt, K: lastLoginAt
+ * Schema (matches DatabaseSetup.gs):
+ * A: userId, B: email, C: passwordHash, D: username, E: role, F: status,
+ * G: token, H: tokenExpiry, I: verificationToken, J: verificationExpiry,
+ * K: resetToken, L: resetExpiry, M: createdAt, N: updatedAt
  */
 
 const UserService = {
@@ -28,6 +27,7 @@ const UserService = {
    * @param {Object} userData - User data object
    * @param {string} userData.email - User email
    * @param {string} userData.password - Plain text password
+   * @param {string} userData.username - Username (optional)
    * @param {string} userData.role - User role (ROLE_ADMIN or ROLE_USER)
    * @returns {Object} Created user object (without password)
    */
@@ -43,34 +43,41 @@ const UserService = {
       )
     }
 
-    // Generate salt and hash password
-    const salt = PasswordUtil.generateSalt()
-    const hashedPassword = PasswordUtil.hashPassword(userData.password, salt)
+    // Generate userId
+    const userId = Utilities.getUuid()
+
+    // Hash password with embedded salt
+    const passwordHash = PasswordUtil.hashPasswordWithSalt(userData.password)
 
     // Generate verification token
     const verificationToken = Utilities.getUuid()
-    const verificationTokenExpiry = DateUtil.addHours(new Date(), 24).getTime()
+    const verificationExpiry = DateUtil.addHours(new Date(), 24).getTime()
 
     // Create user row
     const now = DateUtil.getCurrentTimestamp()
     const row = [
-      userData.email, // A: email
-      hashedPassword, // B: password
-      salt, // C: salt
-      userData.role || 'ROLE_USER', // D: role
-      'PENDING', // E: status
-      verificationToken, // F: verificationToken
-      verificationTokenExpiry, // G: verificationTokenExpiry
-      '', // H: passwordResetOTP
-      '', // I: otpExpiry
-      now, // J: createdAt
-      '', // K: lastLoginAt
+      userId, // A: userId
+      userData.email, // B: email
+      passwordHash, // C: passwordHash
+      userData.username || '', // D: username
+      userData.role || 'ROLE_USER', // E: role
+      'PENDING', // F: status
+      '', // G: token (session token, set on login)
+      '', // H: tokenExpiry
+      verificationToken, // I: verificationToken
+      verificationExpiry, // J: verificationExpiry
+      '', // K: resetToken
+      '', // L: resetExpiry
+      now, // M: createdAt
+      now, // N: updatedAt
     ]
 
     sheet.appendRow(row)
 
     return {
+      userId: userId,
       email: userData.email,
+      username: userData.username || '',
       role: userData.role || 'ROLE_USER',
       status: 'PENDING',
       verificationToken: verificationToken,
@@ -89,19 +96,23 @@ const UserService = {
 
     // Skip header row
     for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === email) {
+      if (data[i][1] === email) {
+        // Column B is email now
         return {
-          email: data[i][0],
-          password: data[i][1],
-          salt: data[i][2],
-          role: data[i][3],
-          status: data[i][4],
-          verificationToken: data[i][5],
-          verificationTokenExpiry: data[i][6],
-          passwordResetOTP: data[i][7],
-          otpExpiry: data[i][8],
-          createdAt: data[i][9],
-          lastLoginAt: data[i][10],
+          userId: data[i][0],
+          email: data[i][1],
+          passwordHash: data[i][2],
+          username: data[i][3],
+          role: data[i][4],
+          status: data[i][5],
+          token: data[i][6],
+          tokenExpiry: data[i][7],
+          verificationToken: data[i][8],
+          verificationExpiry: data[i][9],
+          resetToken: data[i][10],
+          resetExpiry: data[i][11],
+          createdAt: data[i][12],
+          updatedAt: data[i][13],
           rowIndex: i + 1, // Store row index for updates
         }
       }
@@ -124,41 +135,48 @@ const UserService = {
 
     const sheet = this.getUsersSheet()
     const row = user.rowIndex
+    const now = DateUtil.getCurrentTimestamp()
 
     // Update allowed fields
     if (updates.password !== undefined) {
-      const newSalt = PasswordUtil.generateSalt()
-      const newHash = PasswordUtil.hashPassword(updates.password, newSalt)
-      sheet.getRange(row, 2).setValue(newHash) // B: password
-      sheet.getRange(row, 3).setValue(newSalt) // C: salt
+      const newHash = PasswordUtil.hashPasswordWithSalt(updates.password)
+      sheet.getRange(row, 3).setValue(newHash) // C: passwordHash
+    }
+    if (updates.username !== undefined) {
+      sheet.getRange(row, 4).setValue(updates.username) // D: username
     }
     if (updates.role !== undefined) {
-      sheet.getRange(row, 4).setValue(updates.role) // D: role
+      sheet.getRange(row, 5).setValue(updates.role) // E: role
     }
     if (updates.status !== undefined) {
-      sheet.getRange(row, 5).setValue(updates.status) // E: status
+      sheet.getRange(row, 6).setValue(updates.status) // F: status
+    }
+    if (updates.token !== undefined) {
+      sheet.getRange(row, 7).setValue(updates.token) // G: token
+    }
+    if (updates.tokenExpiry !== undefined) {
+      sheet.getRange(row, 8).setValue(updates.tokenExpiry) // H: tokenExpiry
     }
     if (updates.verificationToken !== undefined) {
-      sheet.getRange(row, 6).setValue(updates.verificationToken) // F: verificationToken
+      sheet.getRange(row, 9).setValue(updates.verificationToken) // I: verificationToken
     }
-    if (updates.verificationTokenExpiry !== undefined) {
-      sheet.getRange(row, 7).setValue(updates.verificationTokenExpiry) // G: verificationTokenExpiry
+    if (updates.verificationExpiry !== undefined) {
+      sheet.getRange(row, 10).setValue(updates.verificationExpiry) // J: verificationExpiry
     }
-    if (updates.passwordResetOTP !== undefined) {
-      sheet.getRange(row, 8).setValue(updates.passwordResetOTP) // H: passwordResetOTP
+    if (updates.resetToken !== undefined) {
+      sheet.getRange(row, 11).setValue(updates.resetToken) // K: resetToken
     }
-    if (updates.otpExpiry !== undefined) {
-      sheet.getRange(row, 9).setValue(updates.otpExpiry) // I: otpExpiry
+    if (updates.resetExpiry !== undefined) {
+      sheet.getRange(row, 12).setValue(updates.resetExpiry) // L: resetExpiry
     }
-    if (updates.lastLoginAt !== undefined) {
-      sheet.getRange(row, 11).setValue(updates.lastLoginAt) // K: lastLoginAt
-    }
+
+    // Always update updatedAt timestamp
+    sheet.getRange(row, 14).setValue(now) // N: updatedAt
 
     // Return updated user (fetch fresh data)
     const updatedUser = this.getUserByEmail(email)
-    delete updatedUser.password
-    delete updatedUser.salt
-    delete updatedUser.passwordResetOTP
+    delete updatedUser.passwordHash
+    delete updatedUser.resetToken
     return updatedUser
   },
 
@@ -185,7 +203,7 @@ const UserService = {
       )
     }
 
-    if (DateUtil.isExpired(user.verificationTokenExpiry)) {
+    if (DateUtil.isExpired(user.verificationExpiry)) {
       throw ResponseHandler.validationError(
         'Verification token expired',
         'error.verification.tokenExpired',
@@ -195,24 +213,27 @@ const UserService = {
     return this.updateUser(email, {
       status: 'VERIFIED',
       verificationToken: '',
-      verificationTokenExpiry: '',
+      verificationExpiry: '',
     })
   },
 
   /**
-   * Updates last login timestamp
+   * Updates session token on login
    * @param {string} email - User email
+   * @param {string} token - Session token
+   * @param {number} tokenExpiry - Token expiry timestamp
    */
-  updateLastLogin: function (email) {
+  updateSessionToken: function (email, token, tokenExpiry) {
     this.updateUser(email, {
-      lastLoginAt: DateUtil.getCurrentTimestamp(),
+      token: token,
+      tokenExpiry: tokenExpiry,
     })
   },
 
   /**
-   * Generates and stores password reset OTP
+   * Generates and stores password reset token
    * @param {string} email - User email
-   * @returns {string} Generated OTP
+   * @returns {string} Generated reset token (OTP)
    */
   generatePasswordResetOTP: function (email) {
     const user = this.getUserByEmail(email)
@@ -221,11 +242,11 @@ const UserService = {
     }
 
     const otp = PasswordUtil.generateOTP()
-    const otpExpiry = DateUtil.createOTPExpiry()
+    const resetExpiry = DateUtil.createOTPExpiry()
 
     this.updateUser(email, {
-      passwordResetOTP: otp,
-      otpExpiry: otpExpiry,
+      resetToken: otp,
+      resetExpiry: resetExpiry,
     })
 
     return otp
@@ -244,14 +265,14 @@ const UserService = {
     }
 
     // Convert both to strings for comparison (Google Sheets may store as number)
-    const storedOTP = String(user.passwordResetOTP || '')
+    const storedOTP = String(user.resetToken || '')
     const providedOTP = String(otp)
 
     if (!storedOTP || storedOTP !== providedOTP) {
       throw ResponseHandler.validationError('Invalid OTP', 'error.otp.invalid')
     }
 
-    if (DateUtil.isExpired(user.otpExpiry)) {
+    if (DateUtil.isExpired(user.resetExpiry)) {
       throw ResponseHandler.validationError('OTP expired', 'error.otp.expired')
     }
 
@@ -269,11 +290,11 @@ const UserService = {
     // Verify OTP first
     this.verifyPasswordResetOTP(email, otp)
 
-    // Update password and clear OTP
+    // Update password and clear reset token
     return this.updateUser(email, {
       password: newPassword,
-      passwordResetOTP: '',
-      otpExpiry: '',
+      resetToken: '',
+      resetExpiry: '',
     })
   },
 }

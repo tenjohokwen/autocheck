@@ -481,6 +481,7 @@ onMounted(async () => {
 
     await documentStore.fetchDocuments()
   } catch (error) {
+    console.error('Error loading documents:', error)
     $q.notify({
       type: 'negative',
       message: t('documents.errorLoadingDocuments'),
@@ -591,6 +592,7 @@ async function applyFilters() {
     }
     await documentStore.fetchDocuments(cleanFilters)
   } catch (error) {
+    console.error('Error applying filters:', error)
     $q.notify({
       type: 'negative',
       message: t('documents.errorLoadingDocuments'),
@@ -603,6 +605,7 @@ async function handleSearch() {
     try {
       await documentStore.searchDocuments(searchQuery.value)
     } catch (error) {
+      console.error('Error searching documents:', error)
       $q.notify({
         type: 'negative',
         message: t('documents.errorSearching'),

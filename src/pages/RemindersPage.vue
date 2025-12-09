@@ -341,6 +341,7 @@ onMounted(async () => {
   try {
     await reminderStore.fetchActiveReminders()
   } catch (error) {
+    console.error('Error loading reminders:', error)
     $q.notify({
       type: 'negative',
       message: t('reminder.errorLoadingReminders'),
@@ -381,6 +382,7 @@ async function handleSubmit(data) {
     }
     closeDialog()
   } catch (error) {
+    console.error('Error saving reminder:', error)
     $q.notify({
       type: 'negative',
       message: error.message || t('reminder.errorSavingReminder'),
@@ -465,6 +467,7 @@ async function handleFilter(filters) {
   try {
     await reminderStore.fetchReminders(filters)
   } catch (error) {
+    console.error('Error applying filters:', error)
     $q.notify({
       type: 'negative',
       message: t('reminder.errorLoadingReminders'),

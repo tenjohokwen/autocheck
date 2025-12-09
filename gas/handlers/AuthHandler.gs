@@ -133,7 +133,7 @@ const AuthHandler = {
 
     UserService.updateUser(email, {
       verificationToken: newToken,
-      verificationTokenExpiry: newExpiry
+      verificationExpiry: newExpiry
     });
 
     // Send new verification email
@@ -177,8 +177,8 @@ const AuthHandler = {
       );
     }
 
-    // Validate password
-    if (!PasswordUtil.validatePassword(password, user.password, user.salt)) {
+    // Validate password (passwordHash includes the salt internally)
+    if (!PasswordUtil.verifyPassword(password, user.passwordHash)) {
       throw ResponseHandler.unauthorizedError(
         'Invalid email or password',
         'error.login.invalid'
@@ -196,8 +196,8 @@ const AuthHandler = {
     // Generate authentication token
     const token = TokenManager.generateToken(user.email);
 
-    // Update last login timestamp
-    UserService.updateLastLogin(user.email);
+    // Update session token in database
+    UserService.updateSessionToken(user.email, token.value, token.ttl);
 
     return ResponseHandler.successWithToken(
       'auth.login.success',

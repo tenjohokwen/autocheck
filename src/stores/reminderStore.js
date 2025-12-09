@@ -7,7 +7,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import api from 'src/services/api'
+import { api } from 'src/services/api'
 
 export const useReminderStore = defineStore('reminder', () => {
   // State
@@ -218,7 +218,7 @@ export const useReminderStore = defineStore('reminder', () => {
     } finally {
       isLoading.value = false
     }
-  },
+  }
 
   /**
    * Dismisses a reminder

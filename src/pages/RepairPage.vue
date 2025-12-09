@@ -337,7 +337,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useQuasar, date } from 'quasar'
 import { useI18n } from 'vue-i18n'
 import { useRepairStore } from 'src/stores/repairStore'
@@ -395,6 +395,7 @@ onMounted(async () => {
       repairStore.fetchWarrantyRepairs(),
     ])
   } catch (error) {
+    console.error('Error loading repair data:', error)
     $q.notify({
       type: 'negative',
       message: t('repair.errorLoadingRepairs'),
@@ -452,6 +453,7 @@ async function handleSubmit(data) {
       repairStore.fetchCostAnalysis(),
     ])
   } catch (error) {
+    console.error('Error saving repair:', error)
     $q.notify({
       type: 'negative',
       message: error.message || t('repair.errorSavingRepair'),
@@ -474,6 +476,7 @@ async function deleteRepair() {
       repairStore.fetchCostAnalysis(),
     ])
   } catch (error) {
+    console.error('Error deleting repair:', error)
     $q.notify({
       type: 'negative',
       message: error.message || t('repair.errorDeletingRepair'),
@@ -491,6 +494,7 @@ async function handleFilter(filters) {
   try {
     await repairStore.fetchRepairs(filters)
   } catch (error) {
+    console.error('Error applying filters:', error)
     $q.notify({
       type: 'negative',
       message: t('repair.errorLoadingRepairs'),

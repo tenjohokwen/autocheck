@@ -73,7 +73,6 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useVehicleStore } from 'src/stores/vehicleStore'
 import FuelCard from './FuelCard.vue'
 
@@ -90,7 +89,6 @@ defineProps({
 
 const emit = defineEmits(['view', 'edit', 'delete', 'filter'])
 
-const { t } = useI18n()
 const vehicleStore = useVehicleStore()
 
 const filters = ref({

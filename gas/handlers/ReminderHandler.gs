@@ -286,3 +286,12 @@ const ReminderHandler = {
     }
   },
 }
+
+// Method aliases for router compatibility
+ReminderHandler.list = ReminderHandler.listReminders
+ReminderHandler.create = ReminderHandler.createReminder
+ReminderHandler.get = ReminderHandler.getReminder
+ReminderHandler.update = ReminderHandler.updateReminder
+ReminderHandler.delete = ReminderHandler.deleteReminder
+ReminderHandler.active = ReminderHandler.getActiveReminders
+ReminderHandler.overdue = ReminderHandler.getOverdueReminders

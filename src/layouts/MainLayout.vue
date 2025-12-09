@@ -81,7 +81,7 @@
             {{ $t('navigation.overview') }}
           </q-item-label>
 
-          <q-item clickable :to="{ name: 'profile' }" exact>
+          <q-item clickable :to="{ name: 'dashboard' }" exact>
             <q-item-section avatar>
               <q-icon name="dashboard" />
             </q-item-section>

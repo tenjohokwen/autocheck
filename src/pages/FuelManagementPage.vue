@@ -332,6 +332,7 @@ onMounted(async () => {
       await loadStatistics()
     }
   } catch (error) {
+    console.error('Error loading fuel records:', error)
     $q.notify({
       type: 'negative',
       message: t('fuel.errorLoadingRecords'),
@@ -390,6 +391,7 @@ async function handleSubmit(data) {
       await loadStatistics()
     }
   } catch (error) {
+    console.error('Error saving fuel record:', error)
     $q.notify({
       type: 'negative',
       message: error.message || t('fuel.errorSavingRecord'),
@@ -411,6 +413,7 @@ async function deleteRecord() {
     await loadEfficiency()
     await loadStatistics()
   } catch (error) {
+    console.error('Error deleting fuel record:', error)
     $q.notify({
       type: 'negative',
       message: error.message || t('fuel.errorDeletingRecord'),
@@ -435,6 +438,7 @@ async function handleFilter(filters) {
       await loadStatistics()
     }
   } catch (error) {
+    console.error('Error applying filters:', error)
     $q.notify({
       type: 'negative',
       message: t('fuel.errorLoadingRecords'),
@@ -452,6 +456,7 @@ async function loadEfficiency() {
       10
     )
   } catch (error) {
+    console.error('Error loading efficiency data:', error)
     $q.notify({
       type: 'negative',
       message: t('fuel.errorCalculatingEfficiency'),

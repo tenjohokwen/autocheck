@@ -445,6 +445,7 @@ onMounted(async () => {
       partsStore.fetchSummary(),
     ])
   } catch (error) {
+    console.error('Error loading parts data:', error)
     $q.notify({
       type: 'negative',
       message: t('parts.errorLoadingParts'),
@@ -513,6 +514,7 @@ async function handleSubmit() {
       partsStore.fetchSummary(),
     ])
   } catch (error) {
+    console.error('Error saving part:', error)
     $q.notify({
       type: 'negative',
       message: error.message || t('parts.errorSavingPart'),
@@ -534,6 +536,7 @@ async function handleAdjustStock() {
       partsStore.fetchSummary(),
     ])
   } catch (error) {
+    console.error('Error adjusting stock:', error)
     $q.notify({
       type: 'negative',
       message: error.message || t('parts.errorAdjustingStock'),
@@ -558,6 +561,7 @@ async function applyFilters() {
     }
     await partsStore.fetchParts(cleanFilters)
   } catch (error) {
+    console.error('Error applying filters:', error)
     $q.notify({
       type: 'negative',
       message: t('parts.errorLoadingParts'),
@@ -570,6 +574,7 @@ async function handleSearch() {
     try {
       await partsStore.searchParts(searchQuery.value)
     } catch (error) {
+      console.error('Error searching parts:', error)
       $q.notify({
         type: 'negative',
         message: t('parts.errorSearching'),

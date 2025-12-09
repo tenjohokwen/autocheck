@@ -29,7 +29,7 @@ const ResponseHandler = {
       const result = fn();
       return this.success(result);
     } catch (error) {
-      console.error('Error in ResponseHandler:', error);
+      LogService.logError(error);
       return this.error(error);
     }
   },

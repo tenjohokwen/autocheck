@@ -254,6 +254,7 @@ onMounted(async () => {
   try {
     await maintenanceStore.fetchTasks()
   } catch (error) {
+    console.error('Error loading maintenance tasks:', error)
     $q.notify({
       type: 'negative',
       message: t('maintenance.errorLoadingTasks'),
@@ -306,6 +307,7 @@ async function handleSubmit(data) {
     }
     closeDialog()
   } catch (error) {
+    console.error('Error saving maintenance task:', error)
     $q.notify({
       type: 'negative',
       message: error.message || t('maintenance.errorSavingTask'),
@@ -340,6 +342,7 @@ async function handleFilter(filters) {
   try {
     await maintenanceStore.fetchTasks(filters)
   } catch (error) {
+    console.error('Error applying filters:', error)
     $q.notify({
       type: 'negative',
       message: t('maintenance.errorLoadingTasks'),

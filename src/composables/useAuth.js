@@ -154,7 +154,11 @@ export function useAuth() {
 
       // Redirect to intended destination or dashboard
       const redirect = router.currentRoute.value.query.redirect
-      router.push(redirect || { name: 'dashboard' })
+      if (redirect) {
+        router.push(redirect)
+      } else {
+        router.push('/app')
+      }
     } catch (err) {
       error.value = err.message
       notifyApiError(err)

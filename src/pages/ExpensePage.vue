@@ -304,6 +304,7 @@ onMounted(async () => {
       expenseStore.fetchRunningCosts(),
     ])
   } catch (error) {
+    console.error('Error loading expense data:', error)
     $q.notify({
       type: 'negative',
       message: t('expense.errorLoadingExpenses'),
@@ -405,6 +406,7 @@ async function handleDashboardFilter(filters) {
       expenseStore.fetchRunningCosts(filters),
     ])
   } catch (error) {
+    console.error('Error applying dashboard filters:', error)
     $q.notify({
       type: 'negative',
       message: t('expense.errorLoadingDashboard'),
@@ -416,6 +418,7 @@ async function handleListFilter(filters) {
   try {
     await expenseStore.fetchExpenses(filters)
   } catch (error) {
+    console.error('Error applying list filters:', error)
     $q.notify({
       type: 'negative',
       message: t('expense.errorLoadingExpenses'),

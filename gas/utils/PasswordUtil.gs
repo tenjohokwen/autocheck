@@ -58,6 +58,34 @@ const PasswordUtil = {
   },
 
   /**
+   * Hashes a password with embedded salt (for new schema)
+   * @param {string} password - Plain text password
+   * @returns {string} Combined salt:hash string
+   */
+  hashPasswordWithSalt: function(password) {
+    const salt = this.generateSalt();
+    const hash = this.hashPassword(password, salt);
+    return salt + ':' + hash;
+  },
+
+  /**
+   * Verifies a password against a combined salt:hash string (for new schema)
+   * @param {string} password - Plain text password to verify
+   * @param {string} storedPasswordHash - Combined salt:hash string
+   * @returns {boolean} True if password matches
+   */
+  verifyPassword: function(password, storedPasswordHash) {
+    if (!storedPasswordHash || storedPasswordHash.indexOf(':') === -1) {
+      return false;
+    }
+    const parts = storedPasswordHash.split(':');
+    const salt = parts[0];
+    const storedHash = parts[1];
+    const computedHash = this.hashPassword(password, salt);
+    return computedHash === storedHash;
+  },
+
+  /**
    * Validates password strength
    * @param {string} password - Password to validate
    * @returns {Object} { isValid: boolean, errors: string[] }

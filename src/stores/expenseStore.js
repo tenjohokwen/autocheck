@@ -7,7 +7,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import api from 'src/services/api'
+import { api } from 'src/services/api'
 
 export const useExpenseStore = defineStore('expense', () => {
   // State
