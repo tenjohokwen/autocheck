@@ -28,9 +28,10 @@ const DatabaseSetup = {
     this.createFleetsSheet(ss)
     this.createVehiclesSheet(ss)
     this.createMaintenanceTasksSheet(ss)
-    this.createFillupsSheet(ss)
+    this.createFuelRecordsSheet(ss)
     this.createExpensesSheet(ss)
     this.createPartsSheet(ss)
+    this.createRepairsSheet(ss)
     this.createDocumentsSheet(ss)
     this.createRemindersSheet(ss)
     this.createReportsSheet(ss)
@@ -45,10 +46,11 @@ const DatabaseSetup = {
         'users',
         'fleets',
         'vehicles',
-        'maintenance_tasks',
-        'fillups',
+        'maintenanceTasks',
+        'fuelRecords',
         'expenses',
         'parts',
+        'repairs',
         'documents',
         'reminders',
         'reports',
@@ -145,7 +147,7 @@ const DatabaseSetup = {
   },
 
   /**
-   * Creates maintenance_tasks sheet
+   * Creates maintenanceTasks sheet
    */
   createMaintenanceTasksSheet: function (ss) {
     const headers = [
@@ -170,25 +172,32 @@ const DatabaseSetup = {
       'createdBy',
       'changedBy',
     ]
-    this.createSheet(ss, 'maintenance_tasks', headers)
+    this.createSheet(ss, 'maintenanceTasks', headers)
   },
 
   /**
-   * Creates fillups sheet
+   * Creates fuelRecords sheet
    */
-  createFillupsSheet: function (ss) {
+  createFuelRecordsSheet: function (ss) {
     const headers = [
-      'fillupId',
+      'recordId',
       'vehicleId',
       'date',
-      'fuelAmount',
+      'odometer',
+      'liters',
       'cost',
-      'odometerReading',
+      'costPerLiter',
+      'fuelType',
+      'fullTank',
+      'station',
+      'notes',
       'efficiency',
       'createdAt',
+      'updatedAt',
       'createdBy',
+      'changedBy',
     ]
-    this.createSheet(ss, 'fillups', headers)
+    this.createSheet(ss, 'fuelRecords', headers)
   },
 
   /**
@@ -215,16 +224,53 @@ const DatabaseSetup = {
   createPartsSheet: function (ss) {
     const headers = [
       'partId',
-      'vehicleId',
-      'taskId',
-      'date',
-      'partType',
       'partNumber',
-      'price',
+      'name',
+      'category',
+      'description',
+      'manufacturer',
+      'quantityInStock',
+      'reorderLevel',
+      'unitPrice',
+      'location',
+      'supplier',
+      'supplierPartNumber',
+      'notes',
       'createdAt',
+      'updatedAt',
       'createdBy',
+      'changedBy',
     ]
     this.createSheet(ss, 'parts', headers)
+  },
+
+  /**
+   * Creates repairs sheet
+   */
+  createRepairsSheet: function (ss) {
+    const headers = [
+      'repairId',
+      'vehicleId',
+      'repairDate',
+      'description',
+      'status',
+      'severity',
+      'cost',
+      'odometerReading',
+      'laborHours',
+      'partsUsed',
+      'technicianName',
+      'repairShop',
+      'warrantyExpiry',
+      'isWarrantyClaim',
+      'invoiceNumber',
+      'notes',
+      'createdAt',
+      'updatedAt',
+      'createdBy',
+      'changedBy',
+    ]
+    this.createSheet(ss, 'repairs', headers)
   },
 
   /**
@@ -234,13 +280,20 @@ const DatabaseSetup = {
     const headers = [
       'documentId',
       'vehicleId',
-      'category',
-      'fileName',
-      'fileType',
-      'fileSize',
-      'driveFileId',
-      'uploadDate',
-      'uploadedBy',
+      'documentType',
+      'title',
+      'description',
+      'documentUrl',
+      'issueDate',
+      'expiryDate',
+      'documentNumber',
+      'issuedBy',
+      'tags',
+      'notes',
+      'createdAt',
+      'updatedAt',
+      'createdBy',
+      'changedBy',
     ]
     this.createSheet(ss, 'documents', headers)
   },
@@ -253,11 +306,20 @@ const DatabaseSetup = {
       'reminderId',
       'vehicleId',
       'type',
+      'title',
+      'description',
       'dueDate',
-      'threshold',
-      'acknowledged',
-      'acknowledgedDate',
+      'priority',
+      'status',
+      'triggerThresholdDays',
+      'triggerThresholdKm',
+      'acknowledgedAt',
+      'completedAt',
+      'notes',
       'createdAt',
+      'updatedAt',
+      'createdBy',
+      'changedBy',
     ]
     this.createSheet(ss, 'reminders', headers)
   },
@@ -295,10 +357,11 @@ const DatabaseSetup = {
       'users',
       'fleets',
       'vehicles',
-      'maintenance_tasks',
-      'fillups',
+      'maintenanceTasks',
+      'fuelRecords',
       'expenses',
       'parts',
+      'repairs',
       'documents',
       'reminders',
       'reports',
