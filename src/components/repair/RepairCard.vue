@@ -32,7 +32,7 @@
         </div>
         <div v-if="repair.cost" class="col-6">
           <div class="text-caption text-grey-7">{{ $t('repair.cost') }}</div>
-          <div class="text-h6 text-primary">${{ formatNumber(repair.cost) }}</div>
+          <div class="text-h6 text-primary">FCFA {{ formatNumber(repair.cost) }}</div>
         </div>
       </div>
 

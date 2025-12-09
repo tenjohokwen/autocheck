@@ -31,7 +31,7 @@
           <div class="text-caption text-grey-7">
             {{ $t('fuel.cost') }}
           </div>
-          <div class="text-body2">${{ formatNumber(record.cost) }}</div>
+          <div class="text-body2">FCFA {{ formatNumber(record.cost) }}</div>
         </div>
 
         <div class="col-12 col-sm-6">
@@ -39,7 +39,7 @@
             {{ $t('fuel.costPerLiter') }}
           </div>
           <div class="text-body2">
-            ${{ formatNumber(record.cost / record.liters) }}/L
+            FCFA {{ formatNumber(record.cost / record.liters) }}/L
           </div>
         </div>
 
@@ -113,7 +113,7 @@ defineEmits(['view', 'edit', 'delete'])
 const authStore = useAuthStore()
 
 const canDelete = computed(() => {
-  return authStore.user?.role === 'FLEET_MANAGER'
+  return authStore.user?.role === 'ROLE_ADMIN'
 })
 
 function formatDate(dateString) {

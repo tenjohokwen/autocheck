@@ -30,7 +30,7 @@
       <q-card-section class="bg-primary text-white">
         <div class="row q-col-gutter-md">
           <div class="col-3">
-            <div class="text-h3">${{ formatNumber(partsStore.summary.totalValue) }}</div>
+            <div class="text-h3">FCFA {{ formatNumber(partsStore.summary.totalValue) }}</div>
             <div class="text-caption">{{ $t('parts.totalInventoryValue') }}</div>
           </div>
           <div class="col-3">
@@ -132,14 +132,14 @@
 
           <template #body-cell-unitPrice="props">
             <q-td :props="props">
-              ${{ formatNumber(props.row.unitPrice) }}
+              FCFA {{ formatNumber(props.row.unitPrice) }}
             </q-td>
           </template>
 
           <template #body-cell-totalValue="props">
             <q-td :props="props">
               <div class="text-weight-bold text-primary">
-                ${{ formatNumber(props.row.totalValue) }}
+                FCFA {{ formatNumber(props.row.totalValue) }}
               </div>
             </q-td>
           </template>
@@ -411,7 +411,7 @@ const formData = ref({
 })
 
 const canCreate = computed(() => {
-  return authStore.user?.role === 'FLEET_MANAGER'
+  return authStore.user?.role === 'ROLE_ADMIN'
 })
 
 const categoryOptions = [

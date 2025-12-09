@@ -247,7 +247,7 @@ const selectedTask = ref(null)
 const isEditMode = ref(false)
 
 const canCreate = computed(() => {
-  return authStore.user?.role === 'FLEET_MANAGER'
+  return authStore.user?.role === 'ROLE_ADMIN'
 })
 
 onMounted(async () => {
@@ -352,7 +352,7 @@ async function handleFilter(filters) {
 
 function canEdit(task) {
   if (!task) return false
-  const isFleetManager = authStore.user?.role === 'FLEET_MANAGER'
+  const isFleetManager = authStore.user?.role === 'ROLE_ADMIN'
   const isTechnician = authStore.user?.role === 'TECHNICIAN'
   const isAssigned = task.assignedTechnician === authStore.user?.email
 

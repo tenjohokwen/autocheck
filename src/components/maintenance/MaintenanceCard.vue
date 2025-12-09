@@ -120,7 +120,7 @@ defineEmits(['view', 'edit', 'delete'])
 const authStore = useAuthStore()
 
 const canEdit = computed(() => {
-  const isFleetManager = authStore.user?.role === 'FLEET_MANAGER'
+  const isFleetManager = authStore.user?.role === 'ROLE_ADMIN'
   const isTechnician = authStore.user?.role === 'TECHNICIAN'
   const isAssigned = props.task.assignedTechnician === authStore.user?.email
 
@@ -128,7 +128,7 @@ const canEdit = computed(() => {
 })
 
 const canDelete = computed(() => {
-  return authStore.user?.role === 'FLEET_MANAGER'
+  return authStore.user?.role === 'ROLE_ADMIN'
 })
 
 function getStatusColor(status) {

@@ -155,7 +155,7 @@
                   {{ $t('repair.cost') }}
                 </div>
                 <div class="text-h6 text-primary">
-                  ${{ formatNumber(selectedRepair.cost) }}
+                  FCFA {{ formatNumber(selectedRepair.cost) }}
                 </div>
               </div>
             </div>
@@ -274,7 +274,7 @@
             <template #body-cell-totalCost="props">
               <q-td :props="props">
                 <div class="text-weight-bold text-primary">
-                  ${{ formatNumber(props.row.totalCost) }}
+                  FCFA {{ formatNumber(props.row.totalCost) }}
                 </div>
               </q-td>
             </template>

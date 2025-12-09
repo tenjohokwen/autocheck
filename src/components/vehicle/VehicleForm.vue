@@ -219,13 +219,13 @@ const editMode = ref(false)
 const currentYear = computed(() => new Date().getFullYear())
 
 const vehicleTypeOptions = computed(() => [
-  { label: $t('vehicle.types.car'), value: 'CAR' },
-  { label: $t('vehicle.types.truck'), value: 'TRUCK' },
-  { label: $t('vehicle.types.van'), value: 'VAN' },
-  { label: $t('vehicle.types.suv'), value: 'SUV' },
-  { label: $t('vehicle.types.motorcycle'), value: 'MOTORCYCLE' },
-  { label: $t('vehicle.types.bus'), value: 'BUS' },
-  { label: $t('vehicle.types.other'), value: 'OTHER' }
+  { label: $t('vehicle.vehicleTypes.CAR'), value: 'CAR' },
+  { label: $t('vehicle.vehicleTypes.TRUCK'), value: 'TRUCK' },
+  { label: $t('vehicle.vehicleTypes.VAN'), value: 'VAN' },
+  { label: $t('vehicle.vehicleTypes.SUV'), value: 'SUV' },
+  { label: $t('vehicle.vehicleTypes.MOTORCYCLE'), value: 'MOTORCYCLE' },
+  { label: $t('vehicle.vehicleTypes.BUS'), value: 'BUS' },
+  { label: $t('vehicle.vehicleTypes.OTHER'), value: 'OTHER' }
 ])
 
 // Watch for vehicle prop changes

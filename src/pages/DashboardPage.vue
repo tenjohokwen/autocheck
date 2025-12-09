@@ -106,17 +106,17 @@
       <div v-if="partsStore.summary" class="col-12 col-md-3">
         <q-card class="cursor-pointer" @click="goToParts">
           <q-card-section>
-            <div class="text-h3 text-green">${{ formatNumber(partsStore.summary.totalValue) }}</div>
+            <div class="text-h3 text-green">FCFA {{ formatNumber(partsStore.summary.totalValue) }}</div>
             <div class="text-caption text-grey-7">{{ $t('dashboard.inventoryValue') }}</div>
           </q-card-section>
         </q-card>
       </div>
 
       <!-- Monthly Expenses (Fleet Manager Only) -->
-      <div v-if="authStore.user?.role === 'FLEET_MANAGER' && expenseDashboard" class="col-12 col-md-3">
+      <div v-if="authStore.user?.role === 'ROLE_ADMIN' && expenseDashboard" class="col-12 col-md-3">
         <q-card class="cursor-pointer" @click="goToExpenses">
           <q-card-section>
-            <div class="text-h3 text-red">${{ formatNumber(expenseDashboard.totalCost) }}</div>
+            <div class="text-h3 text-red">FCFA {{ formatNumber(expenseDashboard.totalCost) }}</div>
             <div class="text-caption text-grey-7">{{ $t('dashboard.monthlyExpenses') }}</div>
           </q-card-section>
         </q-card>
@@ -174,11 +174,11 @@
             <q-item-section>
               <q-item-label>{{ getVehicleName(record.vehicleId) }}</q-item-label>
               <q-item-label caption>
-                {{ formatDate(record.date) }} - {{ record.liters }}L @ ${{ formatNumber(record.costPerLiter) }}/L
+                {{ formatDate(record.date) }} - {{ record.liters }}L @ FCFA {{ formatNumber(record.costPerLiter) }}/L
               </q-item-label>
             </q-item-section>
             <q-item-section side>
-              <q-item-label class="text-weight-bold">${{ formatNumber(record.cost) }}</q-item-label>
+              <q-item-label class="text-weight-bold">FCFA {{ formatNumber(record.cost) }}</q-item-label>
             </q-item-section>
           </q-item>
         </q-list>
@@ -367,7 +367,7 @@ onMounted(async () => {
     ])
 
     // Load expense dashboard if Fleet Manager
-    if (authStore.user?.role === 'FLEET_MANAGER') {
+    if (authStore.user?.role === 'ROLE_ADMIN') {
       try {
         const now = new Date()
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)

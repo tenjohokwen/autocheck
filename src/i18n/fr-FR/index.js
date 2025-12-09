@@ -124,7 +124,11 @@ export default {
     network: 'Erreur réseau. Veuillez vérifier votre connexion.',
     server: 'Erreur serveur. Veuillez réessayer plus tard.',
     unauthorized: 'Non autorisé. Veuillez vous reconnecter.',
-    forbidden: "Vous n'avez pas la permission d'effectuer cette action.",
+    forbidden: {
+      default: "Vous n'avez pas la permission d'effectuer cette action.",
+      adminOnly: "Rôle d'administrateur requis pour effectuer cette action",
+      fleetManagerOnly: "Rôle d'administrateur requis pour effectuer cette action", // backward compatibility
+    },
     notFound: 'Ressource non trouvée.',
     conflict: 'Cette ressource existe déjà.',
     validation: 'Veuillez vérifier votre saisie et réessayer.',

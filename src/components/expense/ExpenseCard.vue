@@ -3,7 +3,7 @@
     <q-card-section>
       <div class="row items-center justify-between">
         <div class="col">
-          <div class="text-h6">${{ formatNumber(expense.amount) }}</div>
+          <div class="text-h6">FCFA {{ formatNumber(expense.amount) }}</div>
           <div class="text-caption text-grey-7">
             {{ expense.description }}
           </div>

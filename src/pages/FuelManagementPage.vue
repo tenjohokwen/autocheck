@@ -115,7 +115,7 @@
             <div class="text-caption text-grey-7">
               {{ $t('fuel.totalCost') }}
             </div>
-            <div class="text-h6">${{ formatNumber(statistics.totalCost) }}</div>
+            <div class="text-h6">FCFA {{ formatNumber(statistics.totalCost) }}</div>
           </div>
           <div class="col-12 col-sm-4">
             <div class="text-caption text-grey-7">
@@ -128,7 +128,7 @@
               {{ $t('fuel.averageCostPerLiter') }}
             </div>
             <div class="text-h6">
-              ${{ formatNumber(statistics.averageCostPerLiter) }}/L
+              FCFA {{ formatNumber(statistics.averageCostPerLiter) }}/L
             </div>
           </div>
         </div>
@@ -205,14 +205,14 @@
             <div class="row q-col-gutter-sm">
               <div class="col-6">
                 <div class="text-caption text-grey-7">{{ $t('fuel.cost') }}</div>
-                <div class="text-body1">${{ formatNumber(selectedRecord.cost) }}</div>
+                <div class="text-body1">FCFA {{ formatNumber(selectedRecord.cost) }}</div>
               </div>
               <div class="col-6">
                 <div class="text-caption text-grey-7">
                   {{ $t('fuel.costPerLiter') }}
                 </div>
                 <div class="text-body1">
-                  ${{ formatNumber(selectedRecord.cost / selectedRecord.liters) }}/L
+                  FCFA {{ formatNumber(selectedRecord.cost / selectedRecord.liters) }}/L
                 </div>
               </div>
             </div>

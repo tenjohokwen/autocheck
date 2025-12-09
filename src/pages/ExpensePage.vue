@@ -60,7 +60,7 @@
           <template #body-cell-totalCost="props">
             <q-td :props="props">
               <div class="text-weight-bold text-primary">
-                ${{ formatNumber(props.row.totalCost) }}
+                FCFA {{ formatNumber(props.row.totalCost) }}
               </div>
             </q-td>
           </template>
@@ -77,7 +77,7 @@
                   :color="getCategoryColor(category)"
                   text-color="white"
                 >
-                  {{ $t(`expense.categories.${category}`) }}: ${{
+                  {{ $t(`expense.categories.${category}`) }}: FCFA {{
                     formatNumber(amount)
                   }}
                 </q-chip>
@@ -161,7 +161,7 @@
                   {{ $t('expense.amount') }}
                 </div>
                 <div class="text-h5 text-primary">
-                  ${{ formatNumber(selectedExpense.amount) }}
+                  FCFA {{ formatNumber(selectedExpense.amount) }}
                 </div>
               </div>
               <div class="col-6">
@@ -269,7 +269,7 @@ const selectedExpense = ref(null)
 const isEditMode = ref(false)
 
 const canCreate = computed(() => {
-  return authStore.user?.role === 'FLEET_MANAGER'
+  return authStore.user?.role === 'ROLE_ADMIN'
 })
 
 const runningCostsColumns = [

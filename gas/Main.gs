@@ -17,15 +17,17 @@
  */
 function doPost(e) {
   return ResponseHandler.handle(function () {
-    // Step 1: Validate request and authenticate user
-    const context = SecurityInterceptor.validateRequest(e)
+   // Step 1: Validate request and authenticate user
+  const context = SecurityInterceptor.validateRequest(e)
 
-    // Step 2: Route to appropriate handler
-    const result = Router.route(context)
+  // Step 2: Route to appropriate handler
+  const handlerResult = Router.route(context)
 
-    // Step 3: Return result (ResponseHandler.handle wraps this)
-    return result
-  })
+  // Step 3: Add token refresh for authenticated requests
+  const enhancedResult = ResponseInterceptor.intercept(context, handlerResult)
+
+  return enhancedResult
+ })
 }
 
 /**

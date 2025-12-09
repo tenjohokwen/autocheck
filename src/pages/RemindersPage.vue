@@ -334,7 +334,7 @@ const selectedReminder = ref(null)
 const isEditMode = ref(false)
 
 const canCreate = computed(() => {
-  return authStore.user?.role === 'FLEET_MANAGER'
+  return authStore.user?.role === 'ROLE_ADMIN'
 })
 
 onMounted(async () => {

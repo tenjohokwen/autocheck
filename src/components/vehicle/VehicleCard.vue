@@ -109,11 +109,11 @@ const emit = defineEmits(['view', 'edit', 'archive', 'click'])
 
 // Computed
 const canEdit = computed(() => {
-  return authStore.user?.role === 'FLEET_MANAGER'
+  return authStore.user?.role === 'ROLE_ADMIN'
 })
 
 const canArchive = computed(() => {
-  return authStore.user?.role === 'FLEET_MANAGER'
+  return authStore.user?.role === 'ROLE_ADMIN'
 })
 
 // Methods

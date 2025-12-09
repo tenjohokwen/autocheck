@@ -23,10 +23,10 @@ const SecurityInterceptor = {
   ],
 
   /**
-   * List of Fleet Manager-only routes
+   * List of Admin-only routes
    * Format: 'handler.method'
    */
-  fleetManagerRoutes: [
+  adminRoutes: [
     'fleet.create',
     'fleet.update',
     'fleet.delete',
@@ -44,6 +44,12 @@ const SecurityInterceptor = {
     'report.schedule',
     'report.list',
   ],
+
+  /**
+   * @deprecated Use adminRoutes instead
+   * Kept for backward compatibility
+   */
+  fleetManagerRoutes: [],
 
   /**
    * Validates the incoming request
@@ -84,11 +90,11 @@ const SecurityInterceptor = {
       throw ResponseHandler.unauthorizedError('User account not verified', 'error.user.notVerified')
     }
 
-    // Check if route requires Fleet Manager role
-    if (this.isFleetManagerRoute(action) && !RoleValidator.isFleetManager(user)) {
+    // Check if route requires Admin role
+    if (this.isAdminRoute(action) && !RoleValidator.isAdmin(user)) {
       throw ResponseHandler.forbiddenError(
-        'Fleet Manager role required',
-        'error.forbidden.fleetManagerOnly',
+        'Admin role required',
+        'error.forbidden.adminOnly',
       )
     }
 
@@ -193,12 +199,20 @@ const SecurityInterceptor = {
   },
 
   /**
-   * Checks if an action is a Fleet Manager-only route
+   * Checks if an action is an Admin-only route
    * @param {string} action - Action string
-   * @returns {boolean} True if Fleet Manager route
+   * @returns {boolean} True if Admin route
+   */
+  isAdminRoute: function (action) {
+    return this.adminRoutes.indexOf(action) !== -1
+  },
+
+  /**
+   * @deprecated Use isAdminRoute instead
+   * Kept for backward compatibility
    */
   isFleetManagerRoute: function (action) {
-    return this.fleetManagerRoutes.indexOf(action) !== -1
+    return this.isAdminRoute(action)
   },
 
   /**

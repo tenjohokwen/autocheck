@@ -197,7 +197,7 @@
 
           <!-- Financial Section (Fleet Manager Only) -->
           <q-item-label
-            v-if="authStore.user?.role === 'FLEET_MANAGER'"
+            v-if="authStore.user?.role === 'ROLE_ADMIN'"
             header
             class="text-grey-8 q-mt-md"
           >
@@ -205,7 +205,7 @@
           </q-item-label>
 
           <q-item
-            v-if="authStore.user?.role === 'FLEET_MANAGER'"
+            v-if="authStore.user?.role === 'ROLE_ADMIN'"
             clickable
             :to="{ name: 'expenses' }"
           >

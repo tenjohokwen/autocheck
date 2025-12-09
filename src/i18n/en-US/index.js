@@ -144,7 +144,11 @@ export default {
     network: 'Network error. Please check your connection.',
     server: 'Server error. Please try again later.',
     unauthorized: 'Unauthorized. Please log in again.',
-    forbidden: "You don't have permission to perform this action.",
+    forbidden: {
+      default: "You don't have permission to perform this action.",
+      adminOnly: 'Admin role required to perform this action',
+      fleetManagerOnly: 'Admin role required to perform this action', // backward compatibility
+    },
     notFound: 'Resource not found.',
     conflict: 'This resource already exists.',
     validation: 'Please check your input and try again.',

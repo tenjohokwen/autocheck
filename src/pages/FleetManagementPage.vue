@@ -113,7 +113,7 @@ const deletingFleet = ref(null)
 
 // Computed
 const canCreate = computed(() => {
-  return authStore.user?.role === 'FLEET_MANAGER'
+  return authStore.user?.role === 'ROLE_ADMIN'
 })
 
 // Lifecycle

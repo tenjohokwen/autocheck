@@ -50,7 +50,7 @@
         <q-card>
           <q-card-section class="bg-primary text-white">
             <div class="text-h6">{{ $t('expense.totalExpenses') }}</div>
-            <div class="text-h3">${{ formatNumber(dashboardData.totalExpenses) }}</div>
+            <div class="text-h3">FCFA {{ formatNumber(dashboardData.totalExpenses) }}</div>
             <div class="text-caption">
               {{ dashboardData.count }} {{ $t('expense.transactions') }}
             </div>
@@ -78,7 +78,7 @@
                   {{ $t(`expense.categories.${category}`) }}
                 </div>
                 <div class="col-auto text-bold">
-                  ${{ formatNumber(amount) }}
+                  FCFA {{ formatNumber(amount) }}
                 </div>
                 <div class="col-12">
                   <q-linear-progress

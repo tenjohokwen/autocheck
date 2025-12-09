@@ -157,7 +157,7 @@ defineEmits(['view', 'acknowledge', 'dismiss', 'complete', 'delete'])
 const authStore = useAuthStore()
 
 const canDelete = computed(() => {
-  return authStore.user?.role === 'FLEET_MANAGER'
+  return authStore.user?.role === 'ROLE_ADMIN'
 })
 
 function getStatusColor(status) {
