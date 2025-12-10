@@ -134,7 +134,15 @@ const MaintenanceService = {
       this.validateTaskStatus(updates.status)
     }
 
+    // Validate task type if being updated
+    if (updates.taskType) {
+      this.validateTaskType(updates.taskType)
+    }
+
     // Update allowed fields
+    if (updates.taskType !== undefined) {
+      task.taskType = updates.taskType
+    }
     if (updates.description !== undefined) {
       task.description = SecurityInterceptor.sanitizeInput(updates.description)
     }
@@ -173,6 +181,7 @@ const MaintenanceService = {
 
     console.log('Maintenance task updated:', {
       taskId: taskId,
+      taskType: task.taskType,
       status: task.status,
     })
 

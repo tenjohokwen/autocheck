@@ -206,7 +206,7 @@ export const useFuelStore = defineStore('fuel', () => {
     error.value = null
 
     try {
-      const response = await api.post('fuel.efficiency', {
+      const response = await api.post('fuel.calculateEfficiency', {
         vehicleId,
         recordCount,
       })

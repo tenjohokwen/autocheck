@@ -5,7 +5,7 @@
         <div class="col">
           <div class="text-h6">{{ task.description }}</div>
           <div class="text-caption text-grey-7">
-            {{ $t(`maintenance.taskTypes.${task.taskType}`) }}
+            {{ $t(`maintenance.taskTypes.${(task.taskType || 'UNDEFINED')?.toUpperCase()}`) }}
           </div>
         </div>
         <div class="col-auto">
@@ -14,7 +14,7 @@
             text-color="white"
             size="sm"
           >
-            {{ $t(`maintenance.statuses.${task.status}`) }}
+            {{ $t(`maintenance.statuses.${task.status?.toUpperCase()}`) }}
           </q-chip>
         </div>
       </div>
@@ -50,7 +50,7 @@
               text-color="white"
               size="sm"
             >
-              {{ $t(`maintenance.priorities.${task.priority}`) }}
+              {{ $t(`maintenance.priorities.${task.priority?.toUpperCase()}`) }}
             </q-chip>
           </div>
         </div>

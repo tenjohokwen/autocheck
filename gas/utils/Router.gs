@@ -132,7 +132,7 @@ const Router = {
       'fuel.get': 'Get a single fuel record by ID',
       'fuel.update': 'Update a fuel record',
       'fuel.delete': 'Delete a fuel record (Fleet Manager only)',
-      'fuel.efficiency': 'Calculate fuel efficiency for a vehicle (FR-006)',
+      'fuel.calculateEfficiency': 'Calculate fuel efficiency for a vehicle (FR-006)',
       'fuel.statistics': 'Get fuel statistics for a vehicle',
 
       // Reminder routes

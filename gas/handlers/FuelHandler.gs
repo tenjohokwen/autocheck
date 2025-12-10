@@ -154,13 +154,13 @@ const FuelHandler = {
 
   /**
    * Calculates fuel efficiency for a vehicle
-   * Route: fuel.efficiency
+   * Route: fuel.calculateEfficiency
    * Role: All authenticated users
    * Implements FR-006
    * @param {Object} context - Request context
    * @returns {Object} Response object
    */
-  calculateEfficiency: function (context) {
+  calculateFuelEfficiency: function (context) {
     try {
       SecurityInterceptor.validateRequiredFields(context.data, ['vehicleId'])
 
@@ -178,7 +178,7 @@ const FuelHandler = {
         data: efficiency,
       }
     } catch (error) {
-      console.error('Error in FuelHandler.calculateEfficiency:', error.message)
+      console.error('Error in FuelHandler.calculateFuelEfficiency:', error.message)
       throw error
     }
   },
@@ -215,5 +215,5 @@ FuelHandler.list = FuelHandler.listFuelRecords
 FuelHandler.get = FuelHandler.getFuelRecord
 FuelHandler.update = FuelHandler.updateFuelRecord
 FuelHandler.delete = FuelHandler.deleteFuelRecord
-FuelHandler.efficiency = FuelHandler.calculateFuelEfficiency
+FuelHandler.calculateEfficiency = FuelHandler.calculateFuelEfficiency
 FuelHandler.statistics = FuelHandler.getFuelStatistics

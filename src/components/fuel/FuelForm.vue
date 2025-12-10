@@ -48,7 +48,7 @@
       type="number"
       min="0"
       step="0.01"
-      prefix="$"
+      prefix="FCFA"
       :rules="[
         (val) => val !== null || $t('validation.required'),
         (val) => val >= 0 || $t('validation.mustBePositive'),

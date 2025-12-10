@@ -199,6 +199,27 @@ onMounted(async () => {
   }
 })
 
+// Helper function to format date to YYYY-MM-DD for HTML5 date input
+function formatDateForInput(dateValue) {
+  if (!dateValue) return ''
+
+  // Handle different date formats
+  try {
+    const date = new Date(dateValue)
+    if (isNaN(date.getTime())) return ''
+
+    // Format to YYYY-MM-DD for HTML5 date input
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  } catch (error) {
+    console.error('Error formatting date:', error)
+    return ''
+  }
+}
+
 // Populate form if editing
 watch(
   () => props.task,
@@ -209,7 +230,7 @@ watch(
         taskType: task.taskType || 'PREVENTIVE',
         description: task.description || '',
         priority: task.priority || 'MEDIUM',
-        scheduledDate: task.scheduledDate || '',
+        scheduledDate: formatDateForInput(task.scheduledDate),
         dueOdometer: task.dueOdometer || null,
         status: task.status || 'SCHEDULED',
         assignedTechnician: task.assignedTechnician || '',

@@ -75,7 +75,7 @@
                     :color="getCategoryColor(category)"
                     size="sm"
                   />
-                  {{ $t(`expense.categories.${category}`) }}
+                  {{ $t(`expense.categories.${category?.toUpperCase()}`) }}
                 </div>
                 <div class="col-auto text-bold">
                   FCFA {{ formatNumber(amount) }}
@@ -109,7 +109,7 @@
                   text-color="white"
                   square
                 >
-                  {{ $t(`expense.categories.${category}`) }}:
+                  {{ $t(`expense.categories.${category?.toUpperCase()}`) }}:
                   {{ getPercentage(amount, dashboardData.totalExpenses) }}%
                 </q-chip>
               </div>

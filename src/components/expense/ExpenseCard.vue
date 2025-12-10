@@ -15,7 +15,7 @@
             :icon="getCategoryIcon(expense.category)"
             size="sm"
           >
-            {{ $t(`expense.categories.${expense.category}`) }}
+            {{ $t(`expense.categories.${expense.category?.toUpperCase()}`) }}
           </q-chip>
         </div>
       </div>

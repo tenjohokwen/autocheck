@@ -38,7 +38,7 @@
                 <q-item-label>{{ task.description }}</q-item-label>
                 <q-item-label caption>
                   {{ formatDate(task.scheduledDate) }} -
-                  {{ $t(`maintenance.priorities.${task.priority}`) }}
+                  {{ $t(`maintenance.priorities.${task.priority?.toUpperCase()}`) }}
                 </q-item-label>
               </q-item-section>
             </q-item>
@@ -99,7 +99,7 @@
                 {{ $t('maintenance.taskType') }}
               </div>
               <div class="text-body1">
-                {{ $t(`maintenance.taskTypes.${selectedTask.taskType}`) }}
+                {{ $t(`maintenance.taskTypes.${(selectedTask.taskType || 'UNDEFINED')?.toUpperCase()}`) }}
               </div>
             </div>
 
@@ -119,7 +119,7 @@
                   :color="getStatusColor(selectedTask.status)"
                   text-color="white"
                 >
-                  {{ $t(`maintenance.statuses.${selectedTask.status}`) }}
+                  {{ $t(`maintenance.statuses.${selectedTask.status?.toUpperCase()}`) }}
                 </q-chip>
               </div>
               <div class="col-6">
@@ -130,7 +130,7 @@
                   :color="getPriorityColor(selectedTask.priority)"
                   text-color="white"
                 >
-                  {{ $t(`maintenance.priorities.${selectedTask.priority}`) }}
+                  {{ $t(`maintenance.priorities.${selectedTask.priority?.toUpperCase()}`) }}
                 </q-chip>
               </div>
             </div>

@@ -3,13 +3,14 @@
  *
  * Pinia store for vehicle management.
  * Handles vehicle CRUD operations, archiving, and fleet assignments.
+ * Uses VehicleService for session-lived caching.
  *
  * Per constitution: Use Pinia for state management, Vue 3 Composition API style.
  */
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { api } from 'src/services/api'
+import { vehicleService } from 'src/services/vehicleService'
 
 export const useVehicleStore = defineStore('vehicle', () => {
   // State
@@ -52,20 +53,22 @@ export const useVehicleStore = defineStore('vehicle', () => {
   // Actions
 
   /**
-   * Fetch all vehicles
+   * Fetch all vehicles using VehicleService
    * @param {boolean} withArchived - Include archived vehicles
+   * @param {boolean} forceRefresh - Force refresh from API
    * @returns {Promise<Array>} Array of vehicles
    */
-  async function fetchVehicles(withArchived = false) {
+  async function fetchVehicles(withArchived = false, forceRefresh = false) {
     isLoading.value = true
     error.value = null
     includeArchived.value = withArchived
 
     try {
-      const response = await api.post('vehicle.list', {
-        includeArchived: withArchived
+      const data = await vehicleService.fetchVehicles({
+        includeArchived: withArchived,
+        forceRefresh
       })
-      vehicles.value = response.data || []
+      vehicles.value = data
       return vehicles.value
     } catch (err) {
       error.value = err.message
@@ -76,18 +79,19 @@ export const useVehicleStore = defineStore('vehicle', () => {
   }
 
   /**
-   * Fetch a single vehicle by ID
+   * Fetch a single vehicle by ID using VehicleService
    * @param {string} vehicleId - Vehicle ID
+   * @param {boolean} forceRefresh - Force refresh from API
    * @returns {Promise<Object>} Vehicle object
    */
-  async function fetchVehicleById(vehicleId) {
+  async function fetchVehicleById(vehicleId, forceRefresh = false) {
     isLoading.value = true
     error.value = null
 
     try {
-      const response = await api.post('vehicle.get', { vehicleId })
-      currentVehicle.value = response.data
-      return response.data
+      const data = await vehicleService.fetchVehicleById(vehicleId, forceRefresh)
+      currentVehicle.value = data
+      return data
     } catch (err) {
       error.value = err.message
       throw err
@@ -97,7 +101,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
   }
 
   /**
-   * Create a new vehicle
+   * Create a new vehicle using VehicleService
    * @param {Object} vehicleData - Vehicle data
    * @returns {Promise<Object>} Created vehicle
    */
@@ -106,8 +110,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     error.value = null
 
     try {
-      const response = await api.post('vehicle.create', vehicleData)
-      const newVehicle = response.data
+      const newVehicle = await vehicleService.createVehicle(vehicleData)
 
       // Add to local state
       vehicles.value.push(newVehicle)
@@ -122,7 +125,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
   }
 
   /**
-   * Update an existing vehicle
+   * Update an existing vehicle using VehicleService
    * @param {string} vehicleId - Vehicle ID
    * @param {Object} updates - Updated fields
    * @returns {Promise<Object>} Updated vehicle
@@ -132,11 +135,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     error.value = null
 
     try {
-      const response = await api.post('vehicle.update', {
-        vehicleId,
-        ...updates
-      })
-      const updatedVehicle = response.data
+      const updatedVehicle = await vehicleService.updateVehicle(vehicleId, updates)
 
       // Update local state
       const index = vehicles.value.findIndex((v) => v.vehicleId === vehicleId)
@@ -158,7 +157,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
   }
 
   /**
-   * Archive a vehicle (soft delete)
+   * Archive a vehicle (soft delete) using VehicleService
    * Implements FR-034, FR-038, FR-039
    * @param {string} vehicleId - Vehicle ID
    * @param {string} reason - Reason for archiving
@@ -169,11 +168,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     error.value = null
 
     try {
-      const response = await api.post('vehicle.archive', {
-        vehicleId,
-        reason
-      })
-      const archivedVehicle = response.data
+      const archivedVehicle = await vehicleService.archiveVehicle(vehicleId, reason)
 
       // Update local state
       const index = vehicles.value.findIndex((v) => v.vehicleId === vehicleId)
@@ -195,7 +190,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
   }
 
   /**
-   * Assign a vehicle to a fleet
+   * Assign a vehicle to a fleet using VehicleService
    * @param {string} vehicleId - Vehicle ID
    * @param {string} fleetId - Fleet ID
    * @returns {Promise<Object>} Updated vehicle
@@ -205,11 +200,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     error.value = null
 
     try {
-      const response = await api.post('vehicle.assignToFleet', {
-        vehicleId,
-        fleetId
-      })
-      const updatedVehicle = response.data
+      const updatedVehicle = await vehicleService.assignToFleet(vehicleId, fleetId)
 
       // Update local state
       const index = vehicles.value.findIndex((v) => v.vehicleId === vehicleId)
@@ -231,7 +222,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
   }
 
   /**
-   * Remove a vehicle from its fleet
+   * Remove a vehicle from its fleet using VehicleService
    * @param {string} vehicleId - Vehicle ID
    * @returns {Promise<Object>} Updated vehicle
    */
@@ -240,10 +231,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     error.value = null
 
     try {
-      const response = await api.post('vehicle.removeFromFleet', {
-        vehicleId
-      })
-      const updatedVehicle = response.data
+      const updatedVehicle = await vehicleService.removeFromFleet(vehicleId)
 
       // Update local state
       const index = vehicles.value.findIndex((v) => v.vehicleId === vehicleId)
@@ -265,7 +253,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
   }
 
   /**
-   * Delete a vehicle permanently (hard delete)
+   * Delete a vehicle permanently (hard delete) using VehicleService
    * Note: Archive is preferred per FR-034
    * @param {string} vehicleId - Vehicle ID
    * @returns {Promise<void>}
@@ -275,7 +263,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     error.value = null
 
     try {
-      await api.post('vehicle.delete', { vehicleId })
+      await vehicleService.deleteVehicle(vehicleId)
 
       // Remove from local state
       vehicles.value = vehicles.value.filter((v) => v.vehicleId !== vehicleId)
@@ -292,6 +280,14 @@ export const useVehicleStore = defineStore('vehicle', () => {
   }
 
   /**
+   * Refresh vehicles from API (bypassing cache)
+   * @returns {Promise<Array>} Fresh vehicle data
+   */
+  async function refreshVehicles() {
+    return fetchVehicles(includeArchived.value, true)
+  }
+
+  /**
    * Clear current vehicle
    */
   function clearCurrentVehicle() {
@@ -299,13 +295,14 @@ export const useVehicleStore = defineStore('vehicle', () => {
   }
 
   /**
-   * Clear all vehicle data
+   * Clear all vehicle data and cache
    */
   function clearVehicles() {
     vehicles.value = []
     currentVehicle.value = null
     error.value = null
     includeArchived.value = false
+    vehicleService.clearCache()
   }
 
   return {
@@ -333,6 +330,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     assignToFleet,
     removeFromFleet,
     deleteVehicle,
+    refreshVehicles,
     clearCurrentVehicle,
     clearVehicles
   }

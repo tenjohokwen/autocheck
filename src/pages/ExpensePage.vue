@@ -77,7 +77,7 @@
                   :color="getCategoryColor(category)"
                   text-color="white"
                 >
-                  {{ $t(`expense.categories.${category}`) }}: FCFA {{
+                  {{ $t(`expense.categories.${category?.toUpperCase()}`) }}: FCFA {{
                     formatNumber(amount)
                   }}
                 </q-chip>
@@ -144,7 +144,7 @@
                 text-color="white"
                 :icon="getCategoryIcon(selectedExpense.category)"
               >
-                {{ $t(`expense.categories.${selectedExpense.category}`) }}
+                {{ $t(`expense.categories.${selectedExpense.category?.toUpperCase()}`) }}
               </q-chip>
             </div>
 
