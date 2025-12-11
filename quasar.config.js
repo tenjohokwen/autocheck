@@ -178,6 +178,7 @@ export default defineConfig((ctx) => {
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/developing-capacitor-apps/configuring-capacitor
     capacitor: {
       hideSplashscreen: true,
+      capacitorCliPreparationParams: ['sync', ctx.targetName],
     },
 
     // Full list of options: https://v2.quasar.dev/quasar-cli-vite/developing-electron-apps/configuring-electron
@@ -185,7 +186,14 @@ export default defineConfig((ctx) => {
       // extendElectronMainConf (esbuildConf) {},
       // extendElectronPreloadConf (esbuildConf) {},
 
-      // extendPackageJson (json) {},
+      extendPackageJson(json) {
+        json.main = './electron-main.js'
+        json.name = 'autocheck'
+        json.productName = 'AutoCheck'
+        json.description = 'Vehicle Maintenance Management System'
+        json.author = 'AutoCheck Team'
+        json.version = '1.0.0'
+      },
 
       // Electron preload scripts (if any) from /src-electron, WITHOUT file extension
       preloadScripts: ['electron-preload'],
@@ -193,23 +201,80 @@ export default defineConfig((ctx) => {
       // specify the debugging port to use for the Electron app when running in development mode
       inspectPort: 5858,
 
-      bundler: 'packager', // 'packager' or 'builder'
+      bundler: 'builder', // 'packager' or 'builder'
 
       packager: {
         // https://github.com/electron-userland/electron-packager/blob/master/docs/api.md#options
         // OS X / Mac App Store
-        // appBundleId: '',
-        // appCategoryType: '',
+        appBundleId: 'com.autocheck.app',
+        appCategoryType: 'public.app-category.business',
         // osxSign: '',
-        // protocol: 'myapp://path',
+        // protocol: 'autocheck://path',
         // Windows only
         // win32metadata: { ... }
       },
 
       builder: {
         // https://www.electron.build/configuration/configuration
+        appId: 'com.autocheck.app',
+        productName: 'AutoCheck',
+        copyright: 'Copyright © 2025 AutoCheck',
 
-        appId: 'Message Line',
+        mac: {
+          category: 'public.app-category.business',
+          target: [
+            {
+              target: 'dmg',
+              arch: ['x64', 'arm64'],
+            },
+            {
+              target: 'zip',
+              arch: ['x64', 'arm64'],
+            },
+          ],
+          icon: 'icons/icon.icns',
+        },
+
+        win: {
+          target: [
+            {
+              target: 'nsis',
+              arch: ['x64', 'ia32'],
+            },
+            {
+              target: 'portable',
+              arch: ['x64'],
+            },
+          ],
+          icon: 'icons/icon.ico',
+        },
+
+        linux: {
+          target: [
+            {
+              target: 'AppImage',
+              arch: ['x64', 'arm64'],
+            },
+            {
+              target: 'deb',
+              arch: ['x64', 'arm64'],
+            },
+            {
+              target: 'rpm',
+              arch: ['x64', 'arm64'],
+            },
+          ],
+          icon: 'icons/icon.png',
+          category: 'Office',
+        },
+
+        publish: [
+          {
+            provider: 'github',
+            owner: 'your-github-username',
+            repo: 'autocheck',
+          },
+        ],
       },
     },
 

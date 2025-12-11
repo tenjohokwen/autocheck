@@ -1,0 +1,180 @@
+name: Build Mobile Apps
+
+on:
+  push:
+    branches: [main, develop]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Add Capacitor mode
+        run: npx quasar mode add capacitor || true
+
+      - name: Build Capacitor app for Android
+        run: npm run build:android
+        env:
+          NODE_ENV: production
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build Android APK (Debug)
+        run: |
+          cd src-capacitor/android
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Build Android AAB (Release)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cd src-capacitor/android
+          ./gradlew bundleRelease --no-daemon
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: autocheck-android-apk
+          path: src-capacitor/android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Upload Android AAB
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: autocheck-android-aab
+          path: src-capacitor/android/app/build/outputs/bundle/release/*.aab
+          retention-days: 90
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Add Capacitor mode
+        run: npx quasar mode add capacitor || true
+
+      - name: Install CocoaPods
+        run: sudo gem install cocoapods
+
+      - name: Build Capacitor app for iOS
+        run: npm run build:ios
+        env:
+          NODE_ENV: production
+
+      - name: Install iOS dependencies
+        run: |
+          cd src-capacitor/ios/App
+          pod install
+
+      - name: Build iOS app (Debug)
+        run: |
+          cd src-capacitor/ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath build \
+            build
+
+      - name: Build iOS IPA (Release)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cd src-capacitor/ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/AutoCheck.xcarchive \
+            archive
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/AutoCheck.xcarchive \
+            -exportPath build \
+            -exportOptionsPlist exportOptions.plist
+        env:
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+
+      - name: Upload iOS app
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: autocheck-ios-ipa
+          path: src-capacitor/ios/App/build/*.ipa
+          retention-days: 90
+
+  create-mobile-release:
+    name: Create Mobile Release
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/autocheck-android-apk/*
+            artifacts/autocheck-android-aab/*
+            artifacts/autocheck-ios-ipa/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
