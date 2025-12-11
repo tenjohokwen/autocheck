@@ -270,6 +270,7 @@ export default defineConfig((ctx) => {
           ],
           icon: 'icons/icon.png',
           category: 'Office',
+          maintainer: 'AutoCheck Team <support@autocheck.app>',
         },
       },
     },

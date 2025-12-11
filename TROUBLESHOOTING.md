@@ -29,13 +29,16 @@ If you still see this:
 ```
 App • ⚠️   electron/builder could not build
 Error: Please specify author 'email' in the application package.json
+It is required to set Linux .deb package maintainer.
 ```
 
 **Cause:**
-electron-builder requires the author field in object format with explicit email.
+electron-builder requires maintainer information for Linux .deb packages.
 
 **Solution:**
-✅ **Already fixed!** The package.json now has:
+✅ **Already fixed!** Two things are configured:
+
+1. The [package.json](package.json:6-9) has author with email:
 ```json
 {
   "author": {
@@ -45,15 +48,18 @@ electron-builder requires the author field in object format with explicit email.
 }
 ```
 
-**To customize (optional):**
-```json
-{
-  "author": {
-    "name": "Your Name or Company",
-    "email": "your-email@example.com"
-  }
+2. The [quasar.config.js](quasar.config.js:273) has Linux maintainer:
+```javascript
+linux: {
+  maintainer: 'AutoCheck Team <support@autocheck.app>',
+  // ... other config
 }
 ```
+
+**To customize (optional):**
+Update both locations with your information:
+- package.json author object
+- quasar.config.js linux.maintainer field
 
 ---
 
