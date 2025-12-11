@@ -220,6 +220,10 @@ export default defineConfig((ctx) => {
         productName: 'AutoCheck',
         copyright: 'Copyright © 2025 AutoCheck',
 
+        // Disable auto-publish - GitHub Actions will handle releases manually
+        // This prevents the "GH_TOKEN not set" error when building without secrets
+        publish: null,
+
         mac: {
           category: 'public.app-category.business',
           target: [
@@ -267,14 +271,6 @@ export default defineConfig((ctx) => {
           icon: 'icons/icon.png',
           category: 'Office',
         },
-
-        publish: [
-          {
-            provider: 'github',
-            owner: 'your-github-username',
-            repo: 'autocheck',
-          },
-        ],
       },
     },
 

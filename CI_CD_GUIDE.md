@@ -2,11 +2,25 @@
 
 Complete guide for setting up GitHub Actions CI/CD for cross-platform builds.
 
+## 🎉 No Secrets Required!
+
+**Good news:** The workflows are configured to work **without any secrets**. You can:
+- ✅ Build for all desktop platforms (unsigned)
+- ✅ Upload artifacts to GitHub Actions
+- ✅ Create GitHub Releases automatically
+- ✅ Distribute unsigned apps immediately
+
+**Secrets are OPTIONAL** and only needed for:
+- Code signing (removes security warnings)
+- App store publishing (iOS App Store, Google Play)
+
+See [BUILDS_WITHOUT_SECRETS.md](BUILDS_WITHOUT_SECRETS.md) for details.
+
 ## Overview
 
 The AutoCheck build system includes two GitHub Actions workflows:
-1. **build-desktop.yml** - Builds for macOS, Windows, and Linux
-2. **build-mobile.yml** - Builds for Android and iOS
+1. **build-desktop.yml** - Builds for macOS, Windows, and Linux (works without secrets)
+2. **build-mobile.yml** - Builds for Android and iOS (Android works without secrets)
 
 ## Workflow Triggers
 
