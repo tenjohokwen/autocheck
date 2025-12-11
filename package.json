@@ -3,7 +3,10 @@
   "version": "0.0.1",
   "description": "Vehicle maintenance management system",
   "productName": "AutoCheck",
-  "author": "mokwen <mokwen@groupon.com>",
+  "author": {
+    "name": "AutoCheck Team",
+    "email": "support@autocheck.app"
+  },
   "type": "module",
   "private": true,
   "scripts": {
