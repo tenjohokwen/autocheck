@@ -19,8 +19,11 @@ async function createWindow () {
     width: 1000,
     height: 600,
     useContentSize: true,
+    backgroundColor: '#ffffff', // Prevent flash of unstyled content
+    show: false, // Don't show until ready-to-show event
     webPreferences: {
       contextIsolation: true,
+      nodeIntegration: false,
       // More info: https://v2.quasar.dev/quasar-cli-vite/developing-electron-apps/electron-preload-script
       preload: path.resolve(
         currentDir,
@@ -29,10 +32,36 @@ async function createWindow () {
     }
   })
 
+  // Show window when ready to prevent visual flash
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show()
+  })
+
+  // Log any console messages from the renderer process
+  mainWindow.webContents.on('console-message', (event, level, message) => {
+    console.log(`Renderer: ${message}`)
+  })
+
+  // Log loading errors
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Failed to load:', errorCode, errorDescription)
+  })
+
   if (process.env.DEV) {
     await mainWindow.loadURL(process.env.APP_URL)
   } else {
-    await mainWindow.loadFile('index.html')
+    // Use path.resolve to ensure correct path resolution on all platforms (especially Windows)
+    const indexPath = path.resolve(currentDir, 'index.html')
+    console.log('Loading index.html from:', indexPath)
+
+    try {
+      await mainWindow.loadFile(indexPath)
+      console.log('Successfully loaded index.html')
+    } catch (error) {
+      console.error('Error loading index.html:', error)
+      // Open DevTools to help debug
+      mainWindow.webContents.openDevTools()
+    }
   }
 
   if (process.env.DEBUGGING) {
