@@ -6,6 +6,9 @@
           {{ formatDate(repair.repairDate) }}
         </div>
         <div class="text-h6">{{ repair.description }}</div>
+        <div class="text-caption text-grey-7 q-mt-xs">
+          {{ vehicleDisplay }}
+        </div>
       </div>
       <div class="col-auto">
         <q-chip
@@ -83,9 +86,11 @@
 </template>
 
 <script setup>
+import { computed, ref, onMounted } from 'vue'
+import { vehicleService } from 'src/services/vehicleService'
 import { date } from 'quasar'
 
-defineProps({
+const props = defineProps({
   repair: {
     type: Object,
     required: true,
@@ -93,6 +98,25 @@ defineProps({
 })
 
 defineEmits(['view', 'edit', 'delete'])
+
+const vehicle = ref(null)
+
+const vehicleDisplay = computed(() => {
+  if (vehicle.value) {
+    return `${vehicle.value.make} ${vehicle.value.model} (${vehicle.value.licensePlate})`
+  }
+  return props.repair.vehicleId // Fallback to ID if vehicle not loaded yet
+})
+
+onMounted(async () => {
+  try {
+    // vehicleService will use cache if available, or fetch and populate it
+    vehicle.value = await vehicleService.fetchVehicleById(props.repair.vehicleId)
+  } catch (error) {
+    console.warn('Failed to load vehicle details:', error)
+    // vehicleDisplay will fall back to showing the vehicleId
+  }
+})
 
 function getStatusColor(status) {
   const colors = {

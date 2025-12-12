@@ -5,6 +5,9 @@
         <div class="col">
           <div class="text-h6">{{ task.description }}</div>
           <div class="text-caption text-grey-7">
+            {{ vehicleDisplay }}
+          </div>
+          <div class="text-caption text-grey-6">
             {{ $t(`maintenance.taskTypes.${(task.taskType || 'UNDEFINED')?.toUpperCase()}`) }}
           </div>
         </div>
@@ -104,8 +107,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useAuthStore } from 'src/stores/authStore'
+import { vehicleService } from 'src/services/vehicleService'
 import { date } from 'quasar'
 
 const props = defineProps({
@@ -118,6 +122,7 @@ const props = defineProps({
 defineEmits(['view', 'edit', 'delete'])
 
 const authStore = useAuthStore()
+const vehicle = ref(null)
 
 const canEdit = computed(() => {
   const isFleetManager = authStore.user?.role === 'ROLE_ADMIN'
@@ -129,6 +134,23 @@ const canEdit = computed(() => {
 
 const canDelete = computed(() => {
   return authStore.user?.role === 'ROLE_ADMIN'
+})
+
+const vehicleDisplay = computed(() => {
+  if (vehicle.value) {
+    return `${vehicle.value.make} ${vehicle.value.model} (${vehicle.value.licensePlate})`
+  }
+  return props.task.vehicleId // Fallback to ID if vehicle not loaded yet
+})
+
+onMounted(async () => {
+  try {
+    // vehicleService will use cache if available, or fetch and populate it
+    vehicle.value = await vehicleService.fetchVehicleById(props.task.vehicleId)
+  } catch (error) {
+    console.warn('Failed to load vehicle details:', error)
+    // vehicleDisplay will fall back to showing the vehicleId
+  }
 })
 
 function getStatusColor(status) {

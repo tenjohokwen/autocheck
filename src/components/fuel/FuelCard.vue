@@ -5,7 +5,7 @@
         <div class="col">
           <div class="text-h6">{{ formatDate(record.date) }}</div>
           <div class="text-caption text-grey-7">
-            {{ record.vehicleId }}
+            {{ vehicleDisplay }}
           </div>
         </div>
         <div class="col-auto">
@@ -97,11 +97,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useAuthStore } from 'src/stores/authStore'
+import { vehicleService } from 'src/services/vehicleService'
 import { date } from 'quasar'
 
-defineProps({
+const props = defineProps({
   record: {
     type: Object,
     required: true,
@@ -111,9 +112,27 @@ defineProps({
 defineEmits(['view', 'edit', 'delete'])
 
 const authStore = useAuthStore()
+const vehicle = ref(null)
 
 const canDelete = computed(() => {
   return authStore.user?.role === 'ROLE_ADMIN'
+})
+
+const vehicleDisplay = computed(() => {
+  if (vehicle.value) {
+    return `${vehicle.value.make} ${vehicle.value.model} (${vehicle.value.licensePlate})`
+  }
+  return props.record.vehicleId // Fallback to ID if vehicle not loaded yet
+})
+
+onMounted(async () => {
+  try {
+    // vehicleService will use cache if available, or fetch and populate it
+    vehicle.value = await vehicleService.fetchVehicleById(props.record.vehicleId)
+  } catch (error) {
+    console.warn('Failed to load vehicle details:', error)
+    // vehicleDisplay will fall back to showing the vehicleId
+  }
 })
 
 function formatDate(dateString) {
