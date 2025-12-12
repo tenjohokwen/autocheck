@@ -1,8 +1,26 @@
 # Windows Build Troubleshooting
 
-## Blank Screen Issue
+## ✅ FIXED: Blank Screen Issue
 
-If the Windows Electron app shows a blank/white screen, this is typically caused by one of the following issues:
+**Issue Identified**: The problem was caused by incompatible package versions, specifically `@quasar/app-vite`.
+
+**Root Cause**:
+- This app was using `@quasar/app-vite: ^2.4.0`
+- The working app uses `@quasar/app-vite: ^2.1.0`
+- The version jump (2.1 → 2.4) introduced breaking changes affecting Windows Electron builds
+- The electron-main.js was always correct and identical to the working app
+
+**Solution**: Downgraded to match the working app's versions:
+- `@quasar/app-vite`: `^2.4.0` → `^2.1.0`
+- `@capacitor/*`: `^6.0.0` → `^8.0.0` (to match working app)
+
+**Important**: The electron-main.js file was never the problem. It was already correct.
+
+---
+
+## Historical Context: Blank Screen Issue
+
+If you encounter a blank/white screen in future Electron builds, it's typically caused by one of the following issues:
 
 ### 1. File Path Resolution
 
@@ -26,17 +44,43 @@ npx asar extract app.asar extracted/
 
 ### 3. Console Logging on Windows
 
-To see console output from the Electron app on Windows:
+**CURRENT DEBUG VERSION**: The app now has extensive logging enabled. To see it:
 
-**Method 1: Run from Command Prompt**
+**Run from Command Prompt (REQUIRED)**:
 ```cmd
-cd "C:\Program Files\AutoCheck"
+# Navigate to where you extracted/installed the app
+cd "path\to\AutoCheck"
 AutoCheck.exe
 ```
-Console logs will appear in the terminal.
 
-**Method 2: Enable DevTools**
-The app now automatically opens DevTools if there's a loading error.
+You should immediately see output like:
+```
+=== AutoCheck Electron Starting ===
+Platform: win32
+Current directory: C:\...\resources\app.asar
+Process version: v20.x.x
+Electron version: xx.x.x
+Waiting for app ready...
+App ready! Creating window...
+Creating window...
+Preload path: C:\...\
+Window created
+Opening DevTools for debugging
+PRODUCTION mode: Loading index.html from: C:\...\index.html
+Directory contents check...
+Successfully loaded index.html
+```
+
+**If you see NO output at all**, this indicates:
+- The console isn't attached (run from cmd.exe, not by double-clicking)
+- The app is crashing before any code runs
+- Windows is blocking the executable
+
+**Method 2: DevTools Auto-Open**
+The debug build automatically opens DevTools. Check the DevTools console for:
+- Red error messages
+- Network tab for failed resource loads
+- Console tab for JavaScript errors
 
 ### 4. Recent Fixes Applied
 
