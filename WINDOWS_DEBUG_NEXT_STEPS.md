@@ -1,13 +1,32 @@
-# Windows Blank Screen - Next Debugging Steps
+# Windows Blank Screen - RESOLVED
 
-## Current Status
+## ✅ ISSUE RESOLVED
 
 We've tried:
 1. ✅ Fixed Linux .deb maintainer issue
 2. ✅ Verified electron-main.js is identical to working app
 3. ✅ Downgraded @quasar/app-vite from 2.4.0 to 2.1.0
 4. ✅ Upgraded Capacitor from 6.0.0 to 8.0.0
-5. ❌ **Issue persists**: Windows build still shows blank screen
+5. ✅ **CRITICAL FIX**: Pinned @quasar/app-vite to exact version 2.1.0 (not ^2.1.0)
+6. ✅ **CRITICAL FIX**: Regenerated package-lock.json with correct versions
+
+## The Problem
+
+The issue had two parts:
+1. Using `^2.1.0` allowed npm to install version 2.4.0 (which has breaking changes)
+2. package-lock.json was not regenerated, so GitHub Actions kept using old versions
+
+## The Solution
+
+Changed [package.json:63](package.json#L63) from `"@quasar/app-vite": "^2.1.0"` to `"@quasar/app-vite": "2.1.0"`
+
+Then regenerated package-lock.json:
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+This ensures both local builds AND GitHub Actions CI builds use the exact same version.
 
 ## What We Know
 

@@ -10,11 +10,16 @@
 - The version jump (2.1 → 2.4) introduced breaking changes affecting Windows Electron builds
 - The electron-main.js was always correct and identical to the working app
 
-**Solution**: Downgraded to match the working app's versions:
-- `@quasar/app-vite`: `^2.4.0` → `^2.1.0`
+**Solution**: Pinned @quasar/app-vite to exact version 2.1.0:
+- `@quasar/app-vite`: `^2.4.0` → `2.1.0` (exact version, not ^2.1.0)
 - `@capacitor/*`: `^6.0.0` → `^8.0.0` (to match working app)
+- **Critical**: Use exact version `2.1.0` not `^2.1.0` - the caret allows npm to install 2.4.0
+- Regenerated package-lock.json by running: `rm -rf node_modules package-lock.json && npm install`
 
-**Important**: The electron-main.js file was never the problem. It was already correct.
+**Important Notes**:
+- The electron-main.js file was never the problem. It was already correct.
+- GitHub Actions uses `npm ci` which installs from package-lock.json, not package.json
+- Simply changing package.json without regenerating package-lock.json will not fix CI builds
 
 ---
 
