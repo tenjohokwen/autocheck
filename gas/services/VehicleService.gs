@@ -211,11 +211,21 @@ const VehicleService = {
    * @returns {boolean} True if duplicate
    */
   isLicensePlateDuplicate: function (licensePlate, excludeVehicleId) {
+    // Validate input is a string
+    if (!licensePlate || typeof licensePlate !== 'string') {
+      return false
+    }
+
     const allVehicles = DatabaseUtil.getAllRecords('vehicles')
     const normalizedPlate = licensePlate.toUpperCase().trim()
 
     for (let i = 0; i < allVehicles.length; i++) {
       const vehicle = allVehicles[i]
+      // Skip if vehicle doesn't have a valid license plate
+      if (!vehicle.licensePlate || typeof vehicle.licensePlate !== 'string') {
+        continue
+      }
+
       if (
         vehicle.licensePlate.toUpperCase() === normalizedPlate &&
         vehicle.vehicleId !== excludeVehicleId
@@ -251,11 +261,11 @@ const VehicleService = {
    * @throws {Error} If validation fails
    */
   validateVehicleData: function (data) {
-    if (!data.make || data.make.trim().length === 0) {
+    if (!data.make || typeof data.make !== 'string' || data.make.trim().length === 0) {
       throw new Error('Vehicle make is required')
     }
 
-    if (!data.model || data.model.trim().length === 0) {
+    if (!data.model || typeof data.model !== 'string' || data.model.trim().length === 0) {
       throw new Error('Vehicle model is required')
     }
 
@@ -277,7 +287,7 @@ const VehicleService = {
       throw new Error('Number of seats must be between 1 and 99')
     }
 
-    if (!data.licensePlate || data.licensePlate.trim().length === 0) {
+    if (!data.licensePlate || typeof data.licensePlate !== 'string' || data.licensePlate.trim().length === 0) {
       throw new Error('License plate is required')
     }
 
@@ -285,7 +295,7 @@ const VehicleService = {
       throw new Error('License plate must be 20 characters or less')
     }
 
-    if (!data.vehicleType || data.vehicleType.trim().length === 0) {
+    if (!data.vehicleType || typeof data.vehicleType !== 'string' || data.vehicleType.trim().length === 0) {
       throw new Error('Vehicle type is required')
     }
 
